@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const visitRoutes = require("./routes/visitRoutes");
+const adminRoutes = require("./routes/adminRoutes")
 
 const app = express();
 
@@ -18,6 +19,7 @@ connectDB();
 app.use("/auth", authRoutes); // All routes for user authentication
 app.use("/agent", customerRoutes); // Routes related to customers
 app.use("/agent", visitRoutes); // Routes related to visits
+app.use("/admin", adminRoutes);
 
 // Start server
 app.listen(5000, () => {

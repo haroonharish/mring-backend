@@ -1,6 +1,22 @@
 const Customer = require("../models/Customer");
 const User = require("../models/User");
 
+exports.uploadCustomers = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    res.status(200).json({
+      message: "File uploaded successfully",
+      fileUrl: req.file.path
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 // Admin: get customer reports with filters & pagination
 exports.getCustomerReports = async (req, res) => {
   try {
@@ -36,8 +52,8 @@ exports.getCustomerReports = async (req, res) => {
       visitDate: c.visitDate,
       customerStatus: c.customerStatus,
       updateFrom: c.updateFrom,
-      proofFileUrl: c.proofFile ? `${req.protocol}://${req.get("host")}/${c.proofFile.replace(/\\/g, "/")}` : null
-    }));
+      proofFileUrl: c.proofFile || null
+  }));
 
     res.json({ count: result.length, page, limit, total, customers: result });
 
