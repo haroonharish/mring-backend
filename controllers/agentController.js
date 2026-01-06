@@ -10,6 +10,11 @@ exports.getCustomers = async (req, res) => {
 };
 
 exports.submitVisit = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Proof file is required" });
+    }
+
   const visit = await Visit.create({
     agentId: req.user.userId,
     ...req.body,
@@ -19,9 +24,18 @@ exports.submitVisit = async (req, res) => {
   await Customer.findByIdAndUpdate(req.body.customerId, { status: "VISITED" });
 
   res.status(201).json({ message: "Visit submitted", visit });
+} catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to submit visit" });
+  }
 };
 
 exports.reportVisit = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Proof file is required" });
+    }
+
   const customer = await Customer.findOne({
     _id: req.body.customerId,
     assignedAgentId: req.user.userId
@@ -34,4 +48,8 @@ exports.reportVisit = async (req, res) => {
   await customer.save();
 
   res.json({ message: "Visit reported" });
+} catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to report visit" });
+  }
 };
