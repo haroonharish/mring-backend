@@ -10,10 +10,13 @@ exports.createVisit = async (req, res) => {
     if (!customerId || !visitDate || !customerStatus || !updateFrom) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
-
+    const customer = await Customer.findOne({ customId: customerId });
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
     const visit = new Visit({
       agentId,
-      customerId,
+      customerId:customer.customId,
       visitDate,
       customerStatus,
       remark,
@@ -22,7 +25,7 @@ exports.createVisit = async (req, res) => {
     });
 
     await visit.save();
-    await Customer.findByIdAndUpdate(customerId, { status: "VISITED" });
+    await Customer.findOneAndUpdate({ customId: customer.customId },{ status: "VISITED" });
 
     res.status(201).json({ message: "Visit submitted successfully", visit });
   } catch (err) {
