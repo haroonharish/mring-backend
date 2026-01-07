@@ -3,6 +3,12 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+const generateUserId = async (role) => {
+  const prefix = role === "ADMIN" ? "AD" : "AG";
+  const count = await User.countDocuments({ role });
+  return `${prefix}${(count + 1).toString().padStart(2, "0")}`;
+};
+
 exports.register = async (req, res) => {
   const { username, password, confirmPassword } = req.body;
 
@@ -24,8 +30,11 @@ exports.register = async (req, res) => {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  const customId = await generateUserId("AGENT");
+
   // Save new user
   const user = new User({
+    customId,
     username,
     password: hashedPassword,
     role: "AGENT" // Default role for registration
@@ -53,12 +62,14 @@ exports.login = async (req, res) => {
   }
 
   const token = jwt.sign(
-    { userId: user._id, role: user.role },
+    { userId: user.customId, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: "1d" }
   );
 
   res.json({
+    name: user.username,
+    agentId: user.customerId,
     message: "Login successful",
     token,
     role: user.role
