@@ -17,11 +17,14 @@ connectDB();
 
 // Use routes
 app.use("/auth", authRoutes); // All routes for user authentication
-app.use("/agent", customerRoutes); // Routes related to customers
-app.use("/agent", visitRoutes); // Routes related to visits
+app.use("/agent/customers", customerRoutes); // Routes related to customers
+app.use("/agent/visit", visitRoutes); // Routes related to visits
 app.use("/admin", adminRoutes);
 
 // Start server
-app.listen(5000, () => {
-  console.log("Server started on port 5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
 });
+

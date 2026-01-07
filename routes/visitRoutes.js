@@ -6,6 +6,6 @@ const upload = require("../middleware/upload");
 
 const router = express.Router();
 
-router.post("/visit", authMiddleware(["AGENT"]), upload.single("proofFile"), visitController.createVisit);
+router.post("/", authMiddleware(["AGENT"]), upload.single("proofFile"), visitController.createVisit);
 
 module.exports = router;
