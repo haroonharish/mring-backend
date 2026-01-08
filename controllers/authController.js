@@ -10,10 +10,10 @@ const generateUserId = async (role) => {
 };
 
 exports.register = async (req, res) => {
-  const { username, password, confirmPassword } = req.body;
+  const { username, password, confirmPassword, fullName, phoneNumber } = req.body;
 
   // Validation
-  if (!username || !password || !confirmPassword) {
+  if (!username || !password || !confirmPassword || !fullName || !phoneNumber) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -37,7 +37,9 @@ exports.register = async (req, res) => {
     customId,
     username,
     password: hashedPassword,
-    role: "AGENT" // Default role for registration
+    role: "AGENT",
+    fullName,
+    phoneNumber
   });
 
   await user.save();

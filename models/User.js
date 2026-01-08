@@ -17,10 +17,24 @@ const userSchema = new mongoose.Schema({
     enum: ["AGENT", "ADMIN"],
     default: "AGENT"
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  fullName: {
+    type: String,
+    required: true
+  },
+  phoneNumber: {
+    type: String,
+    required: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+
+  mustChangePassword: {
+    type: Boolean,
+    default: false
   }
+}, { timestamps: true
 });
 
 module.exports = mongoose.model("User", userSchema);
