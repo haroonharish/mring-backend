@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const visitSchema = new mongoose.Schema({
   agentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  customerId: {
+  customId: {
     type: String, // C01
     required: true
   },
