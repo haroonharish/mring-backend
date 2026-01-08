@@ -16,7 +16,7 @@ exports.createCustomer = async (req, res) => {
   
   try {
     const count = await Customer.countDocuments();
-    const customId = 'C${(count + 1).toString().padStart(2, "0")}';
+    const customId = `C${(count + 1).toString().padStart(2, "0")}`;
     const newCustomer = new Customer({
       customerName,
       address,
