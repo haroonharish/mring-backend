@@ -74,7 +74,46 @@ exports.login = async (req, res) => {
     agentId: user.customId,
     message: "Login successful",
     token,
-    role: user.role
+    role: user.role,
+    mustChangePassword: user.mustChangePassword
   });
 };
 
+exports.resetAgentPassword = async (req, res) => {
+  const { agentId } = req.body;
+
+  const user = await User.findOne({ customId: agentId, role: "AGENT" });
+  if (!user) {
+    return res.status(404).json({ message: "Agent not found" });
+  }
+
+  const tempPassword = "Temp@123";
+  const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+  user.password = hashedPassword;
+  user.mustChangePassword = true;
+
+  await user.save();
+
+  res.json({
+    message: "Password reset successful",
+    temporaryPassword: tempPassword
+  });
+};
+
+exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const user = await User.findOne({ customId: req.user.userId });
+
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) {
+    return res.status(400).json({ message: "Old password incorrect" });
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  user.mustChangePassword = false;
+
+  await user.save();
+
+  res.json({ message: "Password changed successfully" });
+};
