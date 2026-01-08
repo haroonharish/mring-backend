@@ -1,9 +1,14 @@
 // controllers/customerController.js
 const Customer = require("../models/Customer");
 
+const generateCustomerId = async () => {
+  const count = await Customer.countDocuments();
+  return `C${(count + 1).toString().padStart(2, "0")}`;
+};
+
 exports.getCustomers = async (req, res) => {
   try {
-    const agentId = req.user.userId; // From the JWT Middleware
+    const agentId = req.user.userId; 
     const customers = await Customer.find({ assignedAgentId: agentId });
     res.json({ customers });
   } catch (err) {
@@ -13,11 +18,12 @@ exports.getCustomers = async (req, res) => {
 
 exports.createCustomer = async (req, res) => {
   const { customerName, address, phone, loanId, assignedAgentId, status } = req.body;
-  
+
   try {
-    const count = await Customer.countDocuments();
-    const customId = `C${(count + 1).toString().padStart(2, "0")}`;
+    const customId = await generateCustomerId();
+
     const newCustomer = new Customer({
+      customId,      
       customerName,
       address,
       phone,
@@ -27,7 +33,11 @@ exports.createCustomer = async (req, res) => {
     });
 
     await newCustomer.save();
-    res.status(201).json({ message: "Customer created successfully", customer: newCustomer });
+
+    res.status(201).json({
+      message: "Customer created successfully",
+      customer: newCustomer
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
