@@ -70,10 +70,11 @@ exports.login = async (req, res) => {
   );
 
   res.json({
-    name: user.username,
-    agentId: user.customerId,
+    name: user.fullName,
+    agentId: user.customId,
     message: "Login successful",
     token,
     role: user.role
   });
 };
+
