@@ -6,11 +6,11 @@ exports.createVisit = async (req, res) => {
     console.log("BODY:", req.body);
   console.log("FILE:", req.file);
   console.log("USER:", req.user);
-  const { customerId, visitDate, customerStatus, remark, updateFrom } = req.body;
+  const { customId, visitDate, customerStatus, remark, updateFrom } = req.body;
   const agentId = req.user.userId; // From the JWT Middleware
 
   try {
-    if (!customerId || !visitDate || !customerStatus || !updateFrom) {
+    if (!customId || !visitDate || !customerStatus || !updateFrom) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
     const customer = await Customer.findOne({ customId: customerId });
@@ -26,6 +26,15 @@ exports.createVisit = async (req, res) => {
       updateFrom,
       proofFile: req.file.path
     });
+console.log("VISIT DATA TO SAVE:", {
+  agentId,
+  customId: customer.customId,
+  visitDate,
+  customerStatus,
+  remark,
+  updateFrom,
+  proofFile: req.file.path
+});
 
     await visit.save();
     await Customer.findOneAndUpdate({ customId: customer.customId },{ status: "VISITED" });
