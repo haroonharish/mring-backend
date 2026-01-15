@@ -8,7 +8,7 @@ exports.createVisit = async (req, res) => {
   console.log("FILE:", req.file);
   console.log("USER:", req.user);
   const { customId, visitDate, customerStatus, remark, updateFrom } = req.body;
-  const agentId = mongoose.Types.ObjectId(req.user.userId); // From the JWT Middleware
+  const agentId = new mongoose.Types.ObjectId(req.user.userId); // From the JWT Middleware
 
    const customerStatusNormalized = customerStatus
     ? customerStatus.toUpperCase().replace(" ", "_")
