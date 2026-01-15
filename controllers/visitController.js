@@ -19,7 +19,7 @@ exports.createVisit = async (req, res) => {
     }
     const visit = new Visit({
       agentId,
-      customerId:customer.customId,
+      customId:customer.customId,
       visitDate,
       customerStatus,
       remark,
