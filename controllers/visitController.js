@@ -3,6 +3,9 @@ const Visit = require("../models/Visit");
 const Customer = require("../models/Customer");
 
 exports.createVisit = async (req, res) => {
+    console.log("BODY:", req.body);
+  console.log("FILE:", req.file);
+  console.log("USER:", req.user);
   const { customerId, visitDate, customerStatus, remark, updateFrom } = req.body;
   const agentId = req.user.userId; // From the JWT Middleware
 
