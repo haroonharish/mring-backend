@@ -7,10 +7,16 @@ exports.createVisit = async (req, res) => {
   console.log("FILE:", req.file);
   console.log("USER:", req.user);
   const { customId, visitDate, customerStatus, remark, updateFrom } = req.body;
-  const agentId = req.user.userId; // From the JWT Middleware
+  const agentId = mongoose.Types.ObjectId(req.user.userId); // From the JWT Middleware
+
+   const customerStatusNormalized = customerStatus
+    ? customerStatus.toUpperCase().replace(" ", "_")
+    : null;
+
+  const updateFromNormalized = updateFrom ? updateFrom.toUpperCase() : null;
 
   try {
-    if (!customId || !visitDate || !customerStatus || !updateFrom) {
+    if (!customId || !visitDate || !customerStatusNormalized || !updateFromNormalized) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
     const customer = await Customer.findOne({ customId: customerId });
@@ -21,9 +27,9 @@ exports.createVisit = async (req, res) => {
       agentId,
       customId:customer.customId,
       visitDate,
-      customerStatus,
+      customerStatus: customerStatusNormalized,
       remark,
-      updateFrom,
+      updateFrom: updateFromNormalized,
       proofFile: req.file.path
     });
 console.log("VISIT DATA TO SAVE:", {
