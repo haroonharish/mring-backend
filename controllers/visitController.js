@@ -1,4 +1,5 @@
 // controllers/visitController.js
+const mongoose = require("mongoose");
 const Visit = require("../models/Visit");
 const Customer = require("../models/Customer");
 
