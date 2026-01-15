@@ -6,6 +6,30 @@ const upload = require("../middleware/upload");
 
 const router = express.Router();
 
-router.post("/", authMiddleware(["AGENT"]), upload.single("proofFile"), visitController.createVisit);
+const uploadMiddleware = (req, res, next) => {
+  upload.single("proofFile")(req, res, (err) => {
+    if (err) {
+      console.error("❌ MULTER ERROR:");
+      console.error(err);
+      return res.status(500).json({
+        message: "File upload failed",
+        error: err.message,
+      });
+    }
+
+    console.log("📁 MULTER SUCCESS");
+    console.log("FILE:", req.file);
+    console.log("BODY AFTER MULTER:", req.body);
+
+    next();
+  });
+};
+
+router.post(
+  "/",
+  authMiddleware(["AGENT"]),
+  uploadMiddleware,
+  visitController.createVisit
+);
 
 module.exports = router;

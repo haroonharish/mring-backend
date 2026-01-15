@@ -3,35 +3,34 @@ const Visit = require("../models/Visit");
 const Customer = require("../models/Customer");
 
 exports.createVisit = async (req, res) => {
-    console.log("BODY:", req.body);
+  console.log("──────── VISIT CONTROLLER ────────");
+  console.log("BODY:", req.body);
   console.log("FILE:", req.file);
   console.log("USER:", req.user);
-  const { customerId, visitDate, customerStatus, remark, updateFrom } = req.body;
-  const agentId = req.user.userId; // From the JWT Middleware
 
   try {
+    const { customerId, visitDate, customerStatus, remark, updateFrom } = req.body;
+    const agentId = req.user?.userId;
+
+    if (!agentId) {
+      console.error("❌ agentId missing in JWT");
+      return res.status(400).json({ message: "Invalid token payload" });
+    }
+
     if (!customerId || !visitDate || !customerStatus || !updateFrom) {
-      return res.status(400).json({ message: "All required fields must be provided" });
+      console.error("❌ Missing fields", req.body);
+      return res.status(400).json({ message: "Missing fields" });
     }
-    const customer = await Customer.findOne({ customId: customerId });
-    if (!customer) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
-    const visit = new Visit({
-      agentId,
-      customerId:customer.customId,
-      visitDate,
-      customerStatus,
-      remark,
-      updateFrom,
-      proofFile: req.file.path
+
+    console.log("🔁 Normalized values:", {
+      customerStatus: customerStatus.toUpperCase(),
+      updateFrom: updateFrom.toUpperCase(),
     });
 
-    await visit.save();
-    await Customer.findOneAndUpdate({ customId: customer.customId },{ status: "VISITED" });
+    return res.json({ debug: "Controller reached successfully" });
 
-    res.status(201).json({ message: "Visit submitted successfully", visit });
   } catch (err) {
+    console.error("❌ CONTROLLER CRASH:", err);
     res.status(500).json({ error: err.message });
   }
 };

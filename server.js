@@ -20,6 +20,14 @@ app.use("/auth", authRoutes); // All routes for user authentication
 app.use("/agent/customers", customerRoutes); // Routes related to customers
 app.use("/agent/visit", visitRoutes); // Routes related to visits
 app.use("/admin", adminRoutes);
+app.use((req, res, next) => {
+  console.log("──────────── REQUEST ────────────");
+  console.log("TIME:", new Date().toISOString());
+  console.log("METHOD:", req.method);
+  console.log("URL:", req.originalUrl);
+  console.log("HEADERS:", req.headers);
+  next();
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;

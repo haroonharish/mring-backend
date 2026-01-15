@@ -18,7 +18,7 @@ const authMiddleware = (roles = []) => {
     try {
       // Verify the JWT token using the secret
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+      console.log("✅ JWT DECODED:", decoded);
       // Attach the decoded token (userId & role) to the request object for later use
       req.user = decoded; 
 
@@ -30,6 +30,7 @@ const authMiddleware = (roles = []) => {
       // If everything is okay, proceed to the next middleware/route handler
       next();
     } catch (err) {
+      console.error("❌ JWT ERROR:", err.message);
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
   };
