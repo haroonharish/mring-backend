@@ -38,7 +38,8 @@ exports.createVisit = async (req, res) => {
       customerStatus: customerStatusNormalized,
       remark,
       updateFrom: updateFromNormalized,
-      proofFile: req.file.secure_url
+      proofFile: req.file.path
+
     });
 
     await Customer.findOneAndUpdate(
