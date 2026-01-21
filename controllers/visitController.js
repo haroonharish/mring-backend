@@ -27,7 +27,7 @@ exports.createVisit = async (req, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    if (!req.file || !req.file.secure_url) {
+    if (!req.file || !req.file.path) {
       return res.status(400).json({ message: "Proof file is required" });
     }
 
