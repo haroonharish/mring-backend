@@ -42,3 +42,20 @@ exports.createCustomer = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getPendingCustomers = async (req, res) => {
+  try {
+    const agentId = req.user.userId; // from JWT
+
+    const customers = await Customer.find({
+      assignedAgentId: agentId,
+      status: "PENDING"
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(customers);
+  } catch (err) {
+    console.error("PENDING CUSTOMERS ERROR:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
