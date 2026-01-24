@@ -9,27 +9,15 @@ const adminRoutes = require("./routes/adminRoutes")
 
 const app = express();
 
-// Middleware
-app.use(express.json()); // For parsing JSON data
+app.use(express.json());
 
-// Connect to the database
 connectDB();
 
-// Use routes
-app.use("/auth", authRoutes); // All routes for user authentication
-app.use("/agent/customers", customerRoutes); // Routes related to customers
-app.use("/agent/visit", visitRoutes); // Routes related to visits
+app.use("/auth", authRoutes);
+app.use("/agent/customers", customerRoutes);
+app.use("/agent/visit", visitRoutes);
 app.use("/admin", adminRoutes);
-app.use((req, res, next) => {
-  console.log("──────────── REQUEST ────────────");
-  console.log("TIME:", new Date().toISOString());
-  console.log("METHOD:", req.method);
-  console.log("URL:", req.originalUrl);
-  console.log("HEADERS:", req.headers);
-  next();
-});
 
-// Start server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

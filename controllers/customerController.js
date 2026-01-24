@@ -59,3 +59,18 @@ exports.getPendingCustomers = async (req, res) => {
   }
 };
 
+exports.getVisitedCustomers = async (req, res) => {
+  try {
+    const agentId = req.user.userId;
+
+    const customers = await Customer.find({
+      assignedAgentId: agentId,
+      status: "VISITED"
+    }).sort({ updatedAt: -1 });
+
+    res.status(200).json(customers);
+  } catch (err) {
+    console.error("VISITED CUSTOMERS ERROR:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

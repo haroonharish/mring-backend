@@ -7,4 +7,5 @@ const router = express.Router();
 router.get("/", authMiddleware(["AGENT"]), customerController.getCustomers);
 router.post("/", authMiddleware(["AGENT", "ADMIN"]), customerController.createCustomer);
 router.get("/pending", authMiddleware(["AGENT"]), customerController.getPendingCustomers);
+router.get("/visited", authMiddleware(["AGENT"]), customerController.getVisitedCustomers);
 module.exports = router;
