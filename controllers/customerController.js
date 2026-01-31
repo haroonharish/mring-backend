@@ -64,47 +64,32 @@ exports.getVisitedCustomers = async (req, res) => {
   try {
     const agentId = req.user.userId;
 
-    // 1. Get all visits by this agent (latest first)
-    const visits = await Visit.find({ agentId })
-      .sort({ visitDate: -1 });
-
-    // 2. Pick latest visit per customer (by customId)
-    const latestVisitMap = new Map();
-
-    for (const visit of visits) {
-      if (!latestVisitMap.has(visit.customId)) {
-        latestVisitMap.set(visit.customId, visit);
-      }
-    }
-
-    const customIds = Array.from(latestVisitMap.keys());
-
-    // 3. Fetch customer details
     const customers = await Customer.find({
-      customId: { $in: customIds }
-    });
+      assignedAgentId: agentId,
+      status: "VISITED"
+    }).sort({ visitDate: -1 });
 
-    // 4. Merge customer + visit info
-    const response = customers.map(customer => {
-      const visit = latestVisitMap.get(customer.customId);
+    const response = customers.map(c => ({
+      customId: c.customId,
+      customerName: c.customerName,
+      phone: c.phone,
+      address: c.address,
 
-      return {
-        customId: customer.customId,
-        name: customer.name,
-        phone: customer.phone,
-        address: customer.address,
+      // business info
+      branch: c.branch,
+      scheme: c.scheme,
+      balance: c.balance,
+      dueDate: c.dueDate,
+      isNPA: c.isNPA,
 
-        lastVisitDate: visit.visitDate,
-        proofType: visit.updateFrom,
-        proofFile: visit.proofFile,
-        remark: visit.remark
-      };
-    });
-
-    // 5. Sort again by lastVisitDate (safety)
-    response.sort(
-      (a, b) => new Date(b.lastVisitDate) - new Date(a.lastVisitDate)
-    );
+      // latest visit snapshot
+      visit: {
+        visitDate: c.visitDate,
+        customerStatus: c.customerStatus,
+        updateFrom: c.updateFrom,
+        proofFile: c.proofFile
+      }
+    }));
 
     res.status(200).json(response);
 
@@ -113,3 +98,4 @@ exports.getVisitedCustomers = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
