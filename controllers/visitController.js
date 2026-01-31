@@ -44,7 +44,12 @@ exports.createVisit = async (req, res) => {
 
     await Customer.findOneAndUpdate(
       { customId: customer.customId },
-      { status: "VISITED" }
+      { status: "VISITED",
+         visitDate,
+    customerStatus: customerStatusNormalized,
+    updateFrom: updateFromNormalized,
+    proofFile: req.file.path
+       }
     );
 
     res.status(201).json({
