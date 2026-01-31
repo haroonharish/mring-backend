@@ -1,4 +1,5 @@
 // controllers/customerController.js
+const Visit = require("../models/Visit");
 const Customer = require("../models/Customer");
 
 const generateCustomerId = async () => {
@@ -63,12 +64,50 @@ exports.getVisitedCustomers = async (req, res) => {
   try {
     const agentId = req.user.userId;
 
-    const customers = await Customer.find({
-      assignedAgentId: agentId,
-      status: "VISITED"
-    }).sort({ updatedAt: -1 });
+    // 1. Get all visits by this agent (latest first)
+    const visits = await Visit.find({ agentId })
+      .sort({ visitDate: -1 });
 
-    res.status(200).json(customers);
+    // 2. Pick latest visit per customer (by customId)
+    const latestVisitMap = new Map();
+
+    for (const visit of visits) {
+      if (!latestVisitMap.has(visit.customId)) {
+        latestVisitMap.set(visit.customId, visit);
+      }
+    }
+
+    const customIds = Array.from(latestVisitMap.keys());
+
+    // 3. Fetch customer details
+    const customers = await Customer.find({
+      customId: { $in: customIds }
+    });
+
+    // 4. Merge customer + visit info
+    const response = customers.map(customer => {
+      const visit = latestVisitMap.get(customer.customId);
+
+      return {
+        customId: customer.customId,
+        name: customer.name,
+        phone: customer.phone,
+        address: customer.address,
+
+        lastVisitDate: visit.visitDate,
+        proofType: visit.updateFrom,
+        proofFile: visit.proofFile,
+        remark: visit.remark
+      };
+    });
+
+    // 5. Sort again by lastVisitDate (safety)
+    response.sort(
+      (a, b) => new Date(b.lastVisitDate) - new Date(a.lastVisitDate)
+    );
+
+    res.status(200).json(response);
+
   } catch (err) {
     console.error("VISITED CUSTOMERS ERROR:", err);
     res.status(500).json({ message: "Internal server error" });
