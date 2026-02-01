@@ -99,3 +99,36 @@ exports.getVisitedCustomers = async (req, res) => {
   }
 };
 
+exports.getCustomerVisitHistory = async (req, res) => {
+  try {
+    const { customId } = req.params;
+    const agentId = req.user.userId;
+
+    // ensure agent owns this customer
+    const customer = await Customer.findOne({
+      customId,
+      assignedAgentId: agentId
+    });
+
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const visits = await Visit.find({ customId })
+      .sort({ visitDate: -1 });
+
+    res.status(200).json({
+      customer: {
+        customId: customer.customId,
+        customerName: customer.customerName,
+        phone: customer.phone,
+        address: customer.address
+      },
+      visits
+    });
+
+  } catch (err) {
+    console.error("VISIT HISTORY ERROR:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
