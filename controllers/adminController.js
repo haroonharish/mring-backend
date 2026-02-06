@@ -2,6 +2,7 @@ const Customer = require("../models/Customer");
 const User = require("../models/User");
 const axios = require("axios");
 const XLSX = require("xlsx");
+const ExcelUpload = require("../models/ExcelUpload");
 
 const generateCustomerId = async () => {
   const count = await Customer.countDocuments();
@@ -13,17 +14,28 @@ exports.uploadCustomers = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
-
+    const adminId = req.user.userId;
+    const fileName = req.file.originalname;
     const fileUrl = req.file.path;
+
+    const uploadHistory = await ExcelUpload.create({
+      uploadedBy: adminId,
+      fileName,
+      fileUrl
+    });
+
     const response = await axios.get(fileUrl, { responseType: "arraybuffer" });
     const workbook = XLSX.read(response.data, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     if (!rows.length) {
+       uploadHistory.status = "FAILED";
+      await uploadHistory.save();
       return res.status(400).json({ message: "Excel file is empty" });
     }
-    const results = { success: 0, failed: [] };
+    let success = 0;
+    let failed = [];
 
     for (const row of rows) {
       try {
@@ -45,12 +57,12 @@ exports.uploadCustomers = async (req, res) => {
         } = row;
 
          if (!customerName || !phone || !assignedAgent) {
-          results.failed.push({ row, reason: "Missing required fields" });
+          failed.push({ row, reason: "Missing required fields" });
           continue;
         }
         const agent = await User.findOne({ username: assignedAgent, role: "AGENT" });
         if (!agent) {
-          results.failed.push({ row, reason: `Agent ${assignedAgent} not found` });
+          failed.push({ row, reason: `Agent ${assignedAgent} not found` });
           continue;
         }
         if (!customerId) {
@@ -58,7 +70,7 @@ exports.uploadCustomers = async (req, res) => {
         } else {
          const existing = await Customer.findOne({ customId: customerId });
         if (existing) {
-          results.failed.push({ row, reason: "Customer ID already exists" });
+          failed.push({ row, reason: "Customer ID already exists" });
           continue;
         }
       }
@@ -80,16 +92,33 @@ exports.uploadCustomers = async (req, res) => {
           status: "PENDING"
         });
         await newCustomer.save();
-        results.success++;
+        success++;
 
       } catch (err) {
-        results.failed.push({ row, reason: err.message });
+        failed.push({ row, reason: err.message });
       }
     }
 
-    res.status(200).json({
-      message: `${results.success} customers uploaded successfully`,
-      failedRows: results.failed,
+     uploadHistory.totalRows = rows.length;
+    uploadHistory.successCount = success;
+    uploadHistory.failedCount = failed.length;
+    uploadHistory.failedRows = failed;
+
+    uploadHistory.status =
+      failed.length === 0
+        ? "SUCCESS"
+        : success === 0
+        ? "FAILED"
+        : "PARTIAL";
+
+    await uploadHistory.save();
+
+     res.status(200).json({
+      message: "Excel processed",
+      uploadId: uploadHistory._id,
+      total: rows.length,
+      success,
+      failedCount: failed.length,
       fileUrl
     });
 
@@ -237,6 +266,18 @@ exports.getAgentCustomers = async (req, res) => {
       customers
     });
 
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getExcelUploadHistory = async (req, res) => {
+  try {
+    const uploads = await ExcelUpload.find()
+      .populate("uploadedBy", "username fullName")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(uploads);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
