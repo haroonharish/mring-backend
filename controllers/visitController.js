@@ -5,23 +5,20 @@ const Customer = require("../models/Customer");
 
 exports.createVisit = async (req, res) => {
   try {
-    const { customId, visitDate, customerStatus, remark, updateFrom } = req.body;
+    const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude } = req.body;
 
     if (!customId || !visitDate || !customerStatus || !updateFrom) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
 
-    // Normalize enums
     const customerStatusNormalized = customerStatus
       .toUpperCase()
       .replace(" ", "_");
 
     const updateFromNormalized = updateFrom.toUpperCase();
 
-    // 🔥 Agent ID — let mongoose cast it
     const agentId = req.user.userId;
 
-    // 🔥 FIX: correct variable name
     const customer = await Customer.findOne({ customId });
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
@@ -38,7 +35,10 @@ exports.createVisit = async (req, res) => {
       customerStatus: customerStatusNormalized,
       remark,
       updateFrom: updateFromNormalized,
-      proofFile: req.file.path
+      proofFile: req.file.path,
+      location: {
+        type: "Point",
+        coordinates: [longitude, latitude]}
 
     });
 

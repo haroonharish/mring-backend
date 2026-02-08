@@ -11,6 +11,17 @@ const visitSchema = new mongoose.Schema({
   remark: { type: String },
   updateFrom: { type: String, enum: ["FIELD", "WHATSAPP", "CALL"], required: true },
   proofFile: { type: String, required: true }, // path to uploaded file
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point"
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true
+    }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 
