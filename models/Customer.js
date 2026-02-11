@@ -24,6 +24,10 @@ const customerSchema = new mongoose.Schema({
   customerStatus: { type: String, enum: ["NEXT_WEEK", "NEXT_MONTH", "WILL_NOT_GIVE"] },
   updateFrom: { type: String, enum: ["FIELD", "WHATSAPP", "CALL"] },
   proofFile: String, // path to uploaded file
+  uploadBatchId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "ExcelUpload"
+},
   createdAt: { type: Date, default: Date.now }
 });
 

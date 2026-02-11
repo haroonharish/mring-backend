@@ -17,12 +17,31 @@ exports.uploadCustomers = async (req, res) => {
     const adminId = req.user.userId;
     const fileName = req.file.originalname;
     const fileUrl = req.file.path;
+    const now = new Date();
 
-    const uploadHistory = await ExcelUpload.create({
-      uploadedBy: adminId,
-      fileName,
-      fileUrl
-    });
+const monthNames = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+];
+
+// Base label (e.g., JAN_2026)
+const baseLabel = `${monthNames[now.getMonth()]}_${now.getFullYear()}`;
+
+// Count how many uploads already exist for this month
+const existingCount = await ExcelUpload.countDocuments({
+  label: { $regex: `^${baseLabel}` }
+});
+
+// Final versioned label (e.g., JAN_2026_V1, JAN_2026_V2)
+const label = `${baseLabel}_V${existingCount + 1}`;
+
+const uploadHistory = await ExcelUpload.create({
+  uploadedBy: adminId,
+  label,
+  fileName,
+  fileUrl
+});
+
 
     const response = await axios.get(fileUrl, { responseType: "arraybuffer" });
     const workbook = XLSX.read(response.data, { type: "buffer" });
@@ -89,7 +108,8 @@ exports.uploadCustomers = async (req, res) => {
           address,
           isNPA: isNPA === "YES" || isNPA === true,
           assignedAgentId: agent._id,
-          status: "PENDING"
+          status: "PENDING",
+          uploadBatchId: uploadHistory._id,
         });
         await newCustomer.save();
         success++;
@@ -132,12 +152,23 @@ exports.uploadCustomers = async (req, res) => {
 // Admin: get customer reports with filters & pagination
 exports.getCustomerReports = async (req, res) => {
   try {
-    let { agentUsername, status, page = 1, limit = 20 } = req.query;
+    let { agentUsername, status, batchLabel, page = 1, limit = 20 } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
 
     const query = {};
     if (status) query.status = status.toUpperCase();
+    
+    if (batchLabel) {
+  const batch = await ExcelUpload.findOne({ label: batchLabel });
+
+  if (!batch) {
+    return res.status(404).json({ message: "Batch not found" });
+  }
+
+  query.uploadBatchId = batch._id;
+}
+
 
     if (agentUsername) {
       const agent = await User.findOne({ username: agentUsername.trim().toLowerCase() });

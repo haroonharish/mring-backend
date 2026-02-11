@@ -6,6 +6,7 @@ const excelUploadSchema = new mongoose.Schema({
     ref: "User",
     required: true
   },
+   label: { type: String, required: true },
 
   fileName: { type: String, required: true },
   fileUrl: { type: String, required: true },
