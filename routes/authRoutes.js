@@ -7,4 +7,6 @@ const router = express.Router();
 router.post("/admin/agent/register",authMiddleware(["ADMIN"]), authController.register);
 router.post("/login", authController.login);
 router.post("/change-password", authMiddleware(["AGENT", "ADMIN"]), authController.changePassword);
+router.post("/admin/agent/delete",authMiddleware(["ADMIN"]), authController.deleteAgent);
+
 module.exports = router;

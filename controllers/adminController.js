@@ -79,9 +79,10 @@ const uploadHistory = await ExcelUpload.create({
           failed.push({ row, reason: "Missing required fields" });
           continue;
         }
-        const agent = await User.findOne({ username: assignedAgent, role: "AGENT" });
+        const agent = await User.findOne({ username: assignedAgent, role: "AGENT",
+    isActive: true });
         if (!agent) {
-          failed.push({ row, reason: `Agent ${assignedAgent} not found` });
+          failed.push({ row, reason: `Agent ${assignedAgent} not found or inactive` });
           continue;
         }
         if (!customerId) {
@@ -171,8 +172,10 @@ exports.getCustomerReports = async (req, res) => {
 
 
     if (agentUsername) {
-      const agent = await User.findOne({ username: agentUsername.trim().toLowerCase() });
-      if (!agent) return res.status(404).json({ message: "Agent not found" });
+      const agent = await User.findOne({ username: agentUsername.trim().toLowerCase(),
+  role: "AGENT",
+  isActive: true });
+      if (!agent) return res.status(404).json({ message: "Agent not found or inactive" });
       query.assignedAgentId = agent._id;
     }
 
@@ -207,7 +210,7 @@ exports.getCustomerReports = async (req, res) => {
 
 exports.getAgentsSummary = async (req, res) => {
   const agents = await User.aggregate([
-    { $match: { role: "AGENT" } },
+    { $match: { role: "AGENT", isActive: true } },
     { $lookup: {
         from: "customers",
         localField: "_id",
@@ -242,8 +245,8 @@ exports.getAgentCustomers = async (req, res) => {
     const { agentCustomId } = req.params;
 
     // 1️⃣ Find the agent
-    const agent = await User.findOne({ customId: agentCustomId, role: "AGENT" });
-    if (!agent) return res.status(404).json({ message: "Agent not found" });
+    const agent = await User.findOne({ customId: agentCustomId, role: "AGENT", isActive: true });
+    if (!agent) return res.status(404).json({ message: "Agent not found or inactive" });
 
     // 2️⃣ Aggregate customers with latest visit
     const customers = await Customer.aggregate([

@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  const user = await User.findOne({ username });
+  const user = await User.findOne({ username, isActive: true });
   if (!user) {
     return res.status(400).json({ message: "Invalid credentials" });
   }
@@ -82,9 +82,9 @@ exports.login = async (req, res) => {
 exports.resetAgentPassword = async (req, res) => {
   const { agentId } = req.body;
 
-  const user = await User.findOne({ customId: agentId, role: "AGENT" });
+  const user = await User.findOne({ customId: agentId, role: "AGENT", isActive: true });
   if (!user) {
-    return res.status(404).json({ message: "Agent not found" });
+    return res.status(404).json({ message: "Agent not found or inactive" });
   }
 
   const tempPassword = "Temp@123";
@@ -103,7 +103,8 @@ exports.resetAgentPassword = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  const user = await User.findOne({ customId: req.user.userId });
+  const user = await User.findById(req.user.userId);
+
 
   const isMatch = await bcrypt.compare(oldPassword, user.password);
   if (!isMatch) {
@@ -116,4 +117,34 @@ exports.changePassword = async (req, res) => {
   await user.save();
 
   res.json({ message: "Password changed successfully" });
+};
+
+exports.deleteAgent = async (req, res) => {
+  try {
+    const { agentId } = req.body;
+if (!agentId) {
+      return res.status(400).json({ message: "Agent ID required" });
+    }
+
+    const agent = await User.findOne({
+      customId: agentId,
+      role: "AGENT"
+    });
+
+    if (!agent) {
+      return res.status(404).json({ message: "Agent not found" });
+    }
+
+    if (!agent.isActive) {
+      return res.status(400).json({ message: "Agent already deactivated" });
+    }
+
+    agent.isActive = false;
+    await agent.save();
+
+    res.status(200).json({ message: "Agent deactivated successfully" });
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
