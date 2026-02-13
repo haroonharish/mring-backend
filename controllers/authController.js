@@ -148,3 +148,25 @@ if (!agentId) {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.restoreAgent = async (req, res) => {
+  const { agentId } = req.body;
+
+  const agent = await User.findOne({
+    customId: agentId,
+    role: "AGENT"
+  });
+
+  if (!agent) {
+    return res.status(404).json({ message: "Agent not found" });
+  }
+
+  if (agent.isActive) {
+    return res.status(400).json({ message: "Agent already active" });
+  }
+
+  agent.isActive = true;
+  await agent.save();
+
+  res.json({ message: "Agent restored successfully" });
+};
