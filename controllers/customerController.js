@@ -87,8 +87,15 @@ exports.getVisitedCustomers = async (req, res) => {
         updateFrom: c.updateFrom,
         proofFile: c.proofFile || []
       }
-    }));
+    })); // <-- closing parentheses for map
 
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error("GET VISITED CUSTOMERS ERROR:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 exports.getCustomerVisitHistory = async (req, res) => {
   try {
