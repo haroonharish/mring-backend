@@ -210,7 +210,7 @@ exports.getCustomerReports = async (req, res) => {
 
 exports.getAgentsSummary = async (req, res) => {
   const agents = await User.aggregate([
-    { $match: { role: "AGENT", isActive: true } },
+    { $match: { role: "AGENT" } },
     { $lookup: {
         from: "customers",
         localField: "_id",
@@ -231,6 +231,7 @@ exports.getAgentsSummary = async (req, res) => {
         _id: 0,
         agentId: "$customId",
         name: "$fullName",
+        isActive: 1,
         totalCustomers: 1,
         completedCustomers: 1
       }
