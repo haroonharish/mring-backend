@@ -61,6 +61,7 @@ exports.getPendingCustomers = async (req, res) => {
 };
 
 exports.getVisitedCustomers = async (req, res) => {
+  console.log("====== VISITED API CALLED ======");
   try {
     const agentId = req.user.userId;
 console.log("Agent ID value:", agentId);
