@@ -59,25 +59,33 @@ exports.getPendingCustomers = async (req, res) => {
   }
 };
 
+const mongoose = require("mongoose");
+
 exports.getVisitedCustomers = async (req, res) => {
   console.log("====== VISITED API CALLED ======");
+
   try {
-    console.log("req.user:", req.user);
-    const agentId = req.user.userId;
-console.log("Agent ID value:", agentId);
-    console.log("Agent ID type:", typeof agentId);
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ message: "Unauthorized: userId missing" });
+    }
+
+    // Safe conversion to ObjectId
+    const agentObjectId = mongoose.Types.ObjectId(req.user.userId);
+
+    console.log("Agent ID value:", agentObjectId);
+    console.log("Agent ID type:", typeof agentObjectId);
 
     const customers = await Customer.aggregate([
       {
         $match: {
-          assignedAgentId: agentId,
+          assignedAgentId: agentObjectId,
           status: "VISITED"
         }
       },
       {
         $lookup: {
-          from: "visits", // collection name (must match MongoDB collection name)
-          let: { customerId: "$customId", agentIdVar: agentId },
+          from: "visits",
+          let: { customerId: "$customId", agentIdVar: agentObjectId },
           pipeline: [
             {
               $match: {
@@ -117,9 +125,7 @@ console.log("Agent ID value:", agentId);
             customerStatus: "$latestVisit.customerStatus",
             updateFrom: "$latestVisit.updateFrom",
             remark: "$latestVisit.remark",
-            proofFiles: {
-              $ifNull: ["$latestVisit.proofFiles", []]
-            }
+            proofFiles: { $ifNull: ["$latestVisit.proofFiles", []] }
           }
         }
       },
