@@ -246,8 +246,7 @@ exports.getAgentCustomers = async (req, res) => {
     const { agentCustomId } = req.params;
 
     // 1️⃣ Find the agent
-    const agent = await User.findOne({ customId: agentCustomId, role: "AGENT", isActive: true });
-    if (!agent) return res.status(404).json({ message: "Agent not found or inactive" });
+    const agent = await User.findOne({ customId: agentCustomId, role: "AGENT" });
 
     // 2️⃣ Aggregate customers with latest visit
     const customers = await Customer.aggregate([
