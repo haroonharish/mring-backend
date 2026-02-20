@@ -63,6 +63,8 @@ exports.getPendingCustomers = async (req, res) => {
 exports.getVisitedCustomers = async (req, res) => {
   try {
     const agentId = req.user.userId;
+console.log("Agent ID value:", agentId);
+    console.log("Agent ID type:", typeof agentId);
 
     const customers = await Customer.aggregate([
       {
