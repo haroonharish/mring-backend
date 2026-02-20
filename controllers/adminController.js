@@ -173,9 +173,8 @@ exports.getCustomerReports = async (req, res) => {
 
     if (agentUsername) {
       const agent = await User.findOne({ username: agentUsername.trim().toLowerCase(),
-  role: "AGENT",
-  isActive: true });
-      if (!agent) return res.status(404).json({ message: "Agent not found or inactive" });
+  role: "AGENT" });
+      if (!agent) return res.status(404).json({ message: "Agent not found" });
       query.assignedAgentId = agent._id;
     }
 
@@ -247,7 +246,7 @@ exports.getAgentCustomers = async (req, res) => {
 
     // 1️⃣ Find the agent
     const agent = await User.findOne({ customId: agentCustomId, role: "AGENT" });
-
+if (!agent) return res.status(404).json({ message: "Agent not found" });
     // 2️⃣ Aggregate customers with latest visit
     const customers = await Customer.aggregate([
       { $match: { assignedAgentId: agent._id } },
