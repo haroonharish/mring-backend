@@ -59,8 +59,6 @@ exports.getPendingCustomers = async (req, res) => {
   }
 };
 
-const mongoose = require("mongoose");
-
 exports.getVisitedCustomers = async (req, res) => {
   console.log("====== VISITED API CALLED ======");
 
