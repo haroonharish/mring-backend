@@ -58,7 +58,7 @@ exports.getPendingCustomers = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
+const mongoose = require("mongoose");
 exports.getVisitedCustomers = async (req, res) => {
   console.log("====== VISITED API CALLED ======");
 
