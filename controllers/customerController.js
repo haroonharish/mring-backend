@@ -62,7 +62,7 @@ exports.getPendingCustomers = async (req, res) => {
 
 exports.getVisitedCustomers = async (req, res) => {
   try {
-    const agentId = new mongoose.Types.ObjectId(req.user.userId);
+    const agentId = req.user.userId;
 
     const customers = await Customer.aggregate([
       {
@@ -134,7 +134,7 @@ exports.getVisitedCustomers = async (req, res) => {
 exports.getCustomerVisitHistory = async (req, res) => {
   try {
     const { customId } = req.params;
-    const agentId = new mongoose.Types.ObjectId(req.user.userId);
+    const agentId = req.user.userId;
 
     // ensure agent owns this customer
     const customer = await Customer.findOne({
