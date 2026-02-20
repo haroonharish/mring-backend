@@ -59,16 +59,26 @@ exports.getPendingCustomers = async (req, res) => {
   }
 };
 const mongoose = require("mongoose");
+
 exports.getVisitedCustomers = async (req, res) => {
   console.log("====== VISITED API CALLED ======");
 
   try {
-    if (!req.user || !req.user.userId) {
+    // ✅ get userId from req.user
+    const userId = req.user?.userId;
+
+    if (!userId) {
       return res.status(401).json({ message: "Unauthorized: userId missing" });
     }
 
-    // Safe conversion to ObjectId
+    // ✅ validate it's a proper ObjectId string
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid agentId" });
+    }
+
+    // ✅ convert to ObjectId for MongoDB
     const agentObjectId = new mongoose.Types.ObjectId(userId);
+
     console.log("Agent ID value:", agentObjectId);
     console.log("Agent ID type:", typeof agentObjectId);
 
@@ -100,12 +110,7 @@ exports.getVisitedCustomers = async (req, res) => {
           as: "latestVisit"
         }
       },
-      {
-        $unwind: {
-          path: "$latestVisit",
-          preserveNullAndEmptyArrays: true
-        }
-      },
+      { $unwind: { path: "$latestVisit", preserveNullAndEmptyArrays: true } },
       {
         $project: {
           customId: 1,
@@ -133,7 +138,7 @@ exports.getVisitedCustomers = async (req, res) => {
 
   } catch (error) {
     console.error("GET VISITED CUSTOMERS ERROR:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
