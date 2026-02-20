@@ -58,89 +58,37 @@ exports.getPendingCustomers = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-const mongoose = require("mongoose");
-
 exports.getVisitedCustomers = async (req, res) => {
-  console.log("====== VISITED API CALLED ======");
-
   try {
-    // ✅ get userId from req.user
-    const userId = req.user?.userId;
+    const agentId = req.user.userId;
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized: userId missing" });
-    }
+    const customers = await Customer.find({
+      assignedAgentId: agentId,
+      status: "VISITED"
+    }).sort({ visitDate: -1 });
 
-    // ✅ validate it's a proper ObjectId string
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid agentId" });
-    }
+    const response = customers.map(c => ({
+      customId: c.customId,
+      customerName: c.customerName,
+      phone: c.phone,
+      address: c.address,
 
-    // ✅ convert to ObjectId for MongoDB
-    const agentObjectId = new mongoose.Types.ObjectId(userId);
+      // business info
+      branch: c.branch,
+      scheme: c.scheme,
+      balance: c.balance,
+      dueDate: c.dueDate,
+      isNPA: c.isNPA,
 
-    console.log("Agent ID value:", agentObjectId);
-    console.log("Agent ID type:", typeof agentObjectId);
+      // latest visit snapshot
+      visit: {
+        visitDate: c.visitDate,
+        customerStatus: c.customerStatus,
+        updateFrom: c.updateFrom,
+        proofFile: c.proofFile || []
+      }
+    }));
 
-    const customers = await Customer.aggregate([
-      {
-        $match: {
-          assignedAgentId: agentObjectId,
-          status: "VISITED"
-        }
-      },
-      {
-        $lookup: {
-          from: "visits",
-          let: { customerId: "$customId", agentIdVar: agentObjectId },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$customId", "$$customerId"] },
-                    { $eq: ["$agentId", "$$agentIdVar"] }
-                  ]
-                }
-              }
-            },
-            { $sort: { visitDate: -1 } },
-            { $limit: 1 }
-          ],
-          as: "latestVisit"
-        }
-      },
-      { $unwind: { path: "$latestVisit", preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          customId: 1,
-          customerName: 1,
-          phone: 1,
-          address: 1,
-          branch: 1,
-          scheme: 1,
-          balance: 1,
-          dueDate: 1,
-          isNPA: 1,
-          visit: {
-            visitDate: "$latestVisit.visitDate",
-            customerStatus: "$latestVisit.customerStatus",
-            updateFrom: "$latestVisit.updateFrom",
-            remark: "$latestVisit.remark",
-            proofFiles: { $ifNull: ["$latestVisit.proofFiles", []] }
-          }
-        }
-      },
-      { $sort: { "visit.visitDate": -1 } }
-    ]);
-
-    res.status(200).json(customers);
-
-  } catch (error) {
-    console.error("GET VISITED CUSTOMERS ERROR:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
 
 exports.getCustomerVisitHistory = async (req, res) => {
   try {
