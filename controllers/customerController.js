@@ -1,7 +1,6 @@
 // controllers/customerController.js
 const Visit = require("../models/Visit");
 const Customer = require("../models/Customer");
-console.log("====== VISITED API CALLED ======");
 const generateCustomerId = async () => {
   const count = await Customer.countDocuments();
   return `C${(count + 1).toString().padStart(2, "0")}`;
@@ -63,6 +62,7 @@ exports.getPendingCustomers = async (req, res) => {
 exports.getVisitedCustomers = async (req, res) => {
   console.log("====== VISITED API CALLED ======");
   try {
+    console.log("req.user:", req.user);
     const agentId = req.user.userId;
 console.log("Agent ID value:", agentId);
     console.log("Agent ID type:", typeof agentId);
