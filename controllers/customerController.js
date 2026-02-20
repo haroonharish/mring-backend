@@ -74,14 +74,14 @@ exports.getVisitedCustomers = async (req, res) => {
       {
         $lookup: {
           from: "visits", // collection name (must match MongoDB collection name)
-          let: { customerId: "$customId" },
+          let: { customerId: "$customId", agentIdVar: agentId },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
                     { $eq: ["$customId", "$$customerId"] },
-                    { $eq: ["$agentId", agentId] }
+                    { $eq: ["$agentId", "$$agentIdVar"] }
                   ]
                 }
               }
