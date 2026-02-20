@@ -62,40 +62,72 @@ exports.getPendingCustomers = async (req, res) => {
 
 exports.getVisitedCustomers = async (req, res) => {
   try {
-    const agentId = req.user.userId;
+    const agentId = new mongoose.Types.ObjectId(req.user.userId);
 
-    const customers = await Customer.find({
-      assignedAgentId: agentId,
-      status: "VISITED"
-    }).sort({ visitDate: -1 });
+    const customers = await Customer.aggregate([
+      {
+        $match: {
+          assignedAgentId: agentId,
+          status: "VISITED"
+        }
+      },
+      {
+        $lookup: {
+          from: "visits", // collection name (must match MongoDB collection name)
+          let: { customerId: "$customId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$customId", "$$customerId"] },
+                    { $eq: ["$agentId", agentId] }
+                  ]
+                }
+              }
+            },
+            { $sort: { visitDate: -1 } },
+            { $limit: 1 }
+          ],
+          as: "latestVisit"
+        }
+      },
+      {
+        $unwind: {
+          path: "$latestVisit",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          customId: 1,
+          customerName: 1,
+          phone: 1,
+          address: 1,
+          branch: 1,
+          scheme: 1,
+          balance: 1,
+          dueDate: 1,
+          isNPA: 1,
+          visit: {
+            visitDate: "$latestVisit.visitDate",
+            customerStatus: "$latestVisit.customerStatus",
+            updateFrom: "$latestVisit.updateFrom",
+            remark: "$latestVisit.remark",
+            proofFiles: {
+              $ifNull: ["$latestVisit.proofFiles", []]
+            }
+          }
+        }
+      },
+      { $sort: { "visit.visitDate": -1 } }
+    ]);
 
-    const response = customers.map(c => ({
-      customId: c.customId,
-      customerName: c.customerName,
-      phone: c.phone,
-      address: c.address,
+    res.status(200).json(customers);
 
-      // business info
-      branch: c.branch,
-      scheme: c.scheme,
-      balance: c.balance,
-      dueDate: c.dueDate,
-      isNPA: c.isNPA,
-
-      // latest visit snapshot
-      visit: {
-        visitDate: c.visitDate,
-        customerStatus: c.customerStatus,
-        updateFrom: c.updateFrom,
-        proofFile: c.proofFile || []
-      }
-    }));
-
-    res.status(200).json(response);
-
-  } catch (err) {
-    console.error("VISITED CUSTOMERS ERROR:", err);
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error) {
+    console.error("GET VISITED CUSTOMERS ERROR:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
