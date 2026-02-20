@@ -68,8 +68,7 @@ exports.getVisitedCustomers = async (req, res) => {
     }
 
     // Safe conversion to ObjectId
-    const agentObjectId = mongoose.Types.ObjectId(req.user.userId);
-
+    const agentObjectId = new mongoose.Types.ObjectId(userId);
     console.log("Agent ID value:", agentObjectId);
     console.log("Agent ID type:", typeof agentObjectId);
 
