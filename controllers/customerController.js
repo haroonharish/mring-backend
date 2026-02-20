@@ -1,7 +1,7 @@
 // controllers/customerController.js
 const Visit = require("../models/Visit");
 const Customer = require("../models/Customer");
-
+console.log("====== VISITED API CALLED ======");
 const generateCustomerId = async () => {
   const count = await Customer.countDocuments();
   return `C${(count + 1).toString().padStart(2, "0")}`;
