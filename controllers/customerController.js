@@ -58,42 +58,72 @@ exports.getPendingCustomers = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 exports.getVisitedCustomers = async (req, res) => {
   try {
     const agentId = req.user.userId;
 
-    const customers = await Customer.find({
-      assignedAgentId: agentId,
-      status: "VISITED"
-    }).sort({ visitDate: -1 });
+    // 1️⃣ Get all visits sorted by latest first
+    const visits = await Visit.find({ agentId })
+      .sort({ visitDate: -1 });
 
-    const response = customers.map(c => ({
-      customId: c.customId,
-      customerName: c.customerName,
-      phone: c.phone,
-      address: c.address,
+    if (!visits.length) {
+      return res.status(200).json([]);
+    }
 
-      // business info
-      branch: c.branch,
-      scheme: c.scheme,
-      balance: c.balance,
-      dueDate: c.dueDate,
-      isNPA: c.isNPA,
-
-      // latest visit snapshot
-      visit: {
-        visitDate: c.visitDate,
-        customerStatus: c.customerStatus,
-        updateFrom: c.updateFrom,
-        proofFile: c.proofFile || []
+    // 2️⃣ Keep only latest visit per customId
+    const latestVisitMap = {};
+    visits.forEach(v => {
+      if (!latestVisitMap[v.customId]) {
+        latestVisitMap[v.customId] = v;
       }
-    })); // <-- closing parentheses for map
+    });
+
+    const customIds = Object.keys(latestVisitMap);
+
+    // 3️⃣ Fetch customers assigned to this agent
+    const customers = await Customer.find({
+      customId: { $in: customIds },
+      assignedAgentId: agentId
+    });
+
+    // 4️⃣ Create customer lookup map
+    const customerMap = {};
+    customers.forEach(c => {
+      customerMap[c.customId] = c;
+    });
+
+    // 5️⃣ Merge data
+    const response = customIds.map(id => {
+      const v = latestVisitMap[id];
+      const c = customerMap[id];
+
+      return {
+        customId: id,
+        customerName: c?.customerName,
+        phone: c?.phone,
+        address: c?.address,
+        branch: c?.branch,
+        scheme: c?.scheme,
+        balance: c?.balance,
+        dueDate: c?.dueDate,
+        isNPA: c?.isNPA,
+
+        visit: {
+          visitDate: v.visitDate,
+          customerStatus: v.customerStatus,
+          updateFrom: v.updateFrom,
+          remark: v.remark, // ✅ latest remark
+          proofFile: v.proofFile || []
+        }
+      };
+    });
 
     res.status(200).json(response);
 
   } catch (error) {
-    console.error("GET VISITED CUSTOMERS ERROR:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Error fetching visited customers" });
   }
 };
 
