@@ -198,7 +198,7 @@ exports.getCustomerReports = async (req, res) => {
       visitDate: c.visitDate,
       customerStatus: c.customerStatus,
       updateFrom: c.updateFrom,
-      proofFileUrl: c.proofFile || null
+      proofFileUrl: c.proofFile || []
   }));
 
     res.json({ count: result.length, page, limit, total, customers: result });

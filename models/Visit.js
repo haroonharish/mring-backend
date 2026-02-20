@@ -10,7 +10,7 @@ const visitSchema = new mongoose.Schema({
   customerStatus: { type: String, enum: ["NEXT_WEEK", "NEXT_MONTH", "WILL_NOT_GIVE"], required: true },
   remark: { type: String },
   updateFrom: { type: String, enum: ["FIELD", "WHATSAPP", "CALL"], required: true },
-  proofFile: { type: String, required: true }, // path to uploaded file
+  proofFile: { type: [String], required: true, default: [] },
   location: {
     type: {
       type: String,

@@ -87,7 +87,7 @@ exports.getVisitedCustomers = async (req, res) => {
         visitDate: c.visitDate,
         customerStatus: c.customerStatus,
         updateFrom: c.updateFrom,
-        proofFile: c.proofFile
+        proofFile: c.proofFile || []
       }
     }));
 

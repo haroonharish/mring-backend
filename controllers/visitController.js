@@ -24,9 +24,10 @@ exports.createVisit = async (req, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    if (!req.file || !req.file.path) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "Proof file is required" });
     }
+    const proofFile = req.files.map(file => file.path);
 
     const visit = await Visit.create({
       agentId,
@@ -35,7 +36,7 @@ exports.createVisit = async (req, res) => {
       customerStatus: customerStatusNormalized,
       remark,
       updateFrom: updateFromNormalized,
-      proofFile: req.file.path,
+      proofFile,
       location: {
         type: "Point",
         coordinates: [longitude, latitude]}
@@ -48,7 +49,7 @@ exports.createVisit = async (req, res) => {
          visitDate,
     customerStatus: customerStatusNormalized,
     updateFrom: updateFromNormalized,
-    proofFile: req.file.path
+    proofFile
        }
     );
 

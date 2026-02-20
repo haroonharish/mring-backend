@@ -7,7 +7,7 @@ const upload = require("../middleware/upload");
 const router = express.Router();
 
 const uploadMiddleware = (req, res, next) => {
-  upload.single("proofFile")(req, res, (err) => {
+  upload.array("proofFile", 3)(req, res, (err) => {
     if (err) {
       console.error("❌ MULTER ERROR:");
       console.error(err);
@@ -18,7 +18,7 @@ const uploadMiddleware = (req, res, next) => {
     }
 
     console.log("📁 MULTER SUCCESS");
-    console.log("FILE:", req.file);
+    console.log("FILE:", req.files);
     console.log("BODY AFTER MULTER:", req.body);
 
     next();
