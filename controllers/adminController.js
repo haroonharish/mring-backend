@@ -4,8 +4,7 @@ const axios = require("axios");
 const XLSX = require("xlsx");
 const ExcelUpload = require("../models/ExcelUpload");
 const ExcelJS = require("exceljs");
-const workbook = new ExcelJS.Workbook();
-const worksheet = workbook.addWorksheet("Monthly Report");
+const Visit = require("../models/Visit");
 
 const generateCustomerId = async () => {
   const count = await Customer.countDocuments();
@@ -319,99 +318,109 @@ exports.getExcelUploadHistory = async (req, res) => {
   }
 };
 
-exports.generateMonthlyReport = async (req, res) => {
+exports.generateBatchReport = async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { uploadId } = req.params;
 
-    if (!month || !year) {
-      return res.status(400).json({ message: "Month and year required" });
+    if (!uploadId) {
+      return res.status(400).json({ message: "Upload ID required" });
     }
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    const customers = await Customer.find().sort({ _id: 1 }).lean();
+    const batch = await ExcelUpload.findById(uploadId);
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    const customers = await Customer.find({
+      uploadBatchId: uploadId
+    })
+    .populate("assignedAgentId", "username")
+    .lean();
+
+    if (!customers.length) {
+      return res.status(404).json({ message: "No customers found in this batch" });
+    }
+
     const visits = await Visit.find({
-    visitDate: {
-      $gte: startDate,
-      $lte: endDate
-  }}).lean();
+      customId: { $in: customers.map(c => c.customId) }
+    }).lean();
 
-  const visitMap = {};
+    const visitMap = {};
 
-visits.forEach(v => {
-  if (!visitMap[v.customId]) {
-    visitMap[v.customId] = [];
-  }
-  visitMap[v.customId].push(v);
-});
-  const reportData = [];
-
-customers.forEach(customer => {
-  const customerVisits = visitMap[customer.customId];
-
-  if (customerVisits && customerVisits.length > 0) {
-    customerVisits.forEach(v => {
-      reportData.push({
-        customId: customer.customId,
-        customerName: customer.customerName,
-        branch: customer.branch,
-        scheme: customer.scheme,
-        balance: customer.balance,
-
-        visitDate: v.visitDate,
-        customerStatus: v.customerStatus,
-        remark: v.remark,
-        proofFile: v.proofFile?.join(", ") || ""
-      });
+    visits.forEach(v => {
+      if (!visitMap[v.customId]) {
+        visitMap[v.customId] = [];
+      }
+      visitMap[v.customId].push(v);
     });
-  } else {
-    reportData.push({
-      customId: customer.customId,
-      customerName: customer.customerName,
-      branch: customer.branch,
-      scheme: customer.scheme,
-      balance: customer.balance,
 
-      visitDate: "",
-      customerStatus: "",
-      remark: "",
-      proofFile: ""
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Batch Report");
+
+    worksheet.columns = [
+      { header: "Customer ID", key: "customId", width: 15 },
+      { header: "Customer Name", key: "customerName", width: 25 },
+      { header: "Phone", key: "phone", width: 15 },
+      { header: "Branch", key: "branch", width: 20 },
+      { header: "Scheme", key: "scheme", width: 20 },
+      { header: "Balance", key: "balance", width: 15 },
+      { header: "Assigned Agent", key: "agent", width: 20 },
+      { header: "Visit Date", key: "visitDate", width: 20 },
+      { header: "Visit Status", key: "status", width: 20 },
+      { header: "Remark", key: "remark", width: 30 }
+    ];
+
+    customers.forEach(customer => {
+      const customerVisits = visitMap[customer.customId];
+
+      if (customerVisits && customerVisits.length > 0) {
+        customerVisits.forEach(v => {
+          worksheet.addRow({
+            customId: customer.customId,
+            customerName: customer.customerName,
+            phone: customer.phone,
+            branch: customer.branch,
+            scheme: customer.scheme,
+            balance: customer.balance,
+            agent: customer.assignedAgentId?.username || "",
+            visitDate: v.visitDate,
+            status: v.customerStatus,
+            remark: v.remark
+          });
+        });
+      } else {
+        worksheet.addRow({
+          customId: customer.customId,
+          customerName: customer.customerName,
+          phone: customer.phone,
+          branch: customer.branch,
+          scheme: customer.scheme,
+          balance: customer.balance,
+          agent: customer.assignedAgentId?.username || "",
+          visitDate: "",
+          status: "NOT VISITED",
+          remark: ""
+        });
+      }
     });
-  }
-});
 
-worksheet.columns = [
-  { header: "Customer ID", key: "customId", width: 15 },
-  { header: "Customer Name", key: "customerName", width: 25 },
-  { header: "Branch", key: "branch", width: 20 },
-  { header: "Scheme", key: "scheme", width: 20 },
-  { header: "Balance", key: "balance", width: 15 },
-  { header: "Visit Date", key: "visitDate", width: 20 },
-  { header: "Status", key: "customerStatus", width: 20 },
-  { header: "Remark", key: "remark", width: 40 },
-  { header: "Proof Files", key: "proofFile", width: 50 }
-];
+    worksheet.getRow(1).font = { bold: true };
 
-reportData.forEach(row => worksheet.addRow(row));
-worksheet.getRow(1).font = { bold: true };
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
 
-res.setHeader(
-  "Content-Type",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=batch-report-${batch.label}.xlsx`
+    );
 
-res.setHeader(
-  "Content-Disposition",
-  `attachment; filename=monthly-report-${month}-${year}.xlsx`
-);
-
-await workbook.xlsx.write(res);
-res.end();
-
-
+    await workbook.xlsx.write(res);
+    res.end();
 
   } catch (error) {
-    console.error("MONTHLY REPORT ERROR:", error);
+    console.error("BATCH REPORT ERROR:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
