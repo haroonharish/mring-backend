@@ -10,4 +10,5 @@ router.post("/reset-agent-password", auth(["ADMIN"]), resetAgentPassword);
 router.get("/agent-summary",auth(["ADMIN"]), getAgentsSummary);
 router.get("/agent/:agentCustomId/Customers",auth(["ADMIN"]), getAgentCustomers);
 router.get("/upload-history", auth(["ADMIN"]), getExcelUploadHistory);
+router.get("/monthly-report", auth(["ADMIN"]), generateMonthlyReport);
 module.exports = router;

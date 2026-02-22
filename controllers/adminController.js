@@ -3,6 +3,9 @@ const User = require("../models/User");
 const axios = require("axios");
 const XLSX = require("xlsx");
 const ExcelUpload = require("../models/ExcelUpload");
+const ExcelJS = require("exceljs");
+const workbook = new ExcelJS.Workbook();
+const worksheet = workbook.addWorksheet("Monthly Report");
 
 const generateCustomerId = async () => {
   const count = await Customer.countDocuments();
@@ -313,5 +316,102 @@ exports.getExcelUploadHistory = async (req, res) => {
     res.status(200).json(uploads);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.generateMonthlyReport = async (req, res) => {
+  try {
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({ message: "Month and year required" });
+    }
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    const customers = await Customer.find().sort({ _id: 1 }).lean();
+    const visits = await Visit.find({
+    visitDate: {
+      $gte: startDate,
+      $lte: endDate
+  }}).lean();
+
+  const visitMap = {};
+
+visits.forEach(v => {
+  if (!visitMap[v.customId]) {
+    visitMap[v.customId] = [];
+  }
+  visitMap[v.customId].push(v);
+});
+  const reportData = [];
+
+customers.forEach(customer => {
+  const customerVisits = visitMap[customer.customId];
+
+  if (customerVisits && customerVisits.length > 0) {
+    customerVisits.forEach(v => {
+      reportData.push({
+        customId: customer.customId,
+        customerName: customer.customerName,
+        branch: customer.branch,
+        scheme: customer.scheme,
+        balance: customer.balance,
+
+        visitDate: v.visitDate,
+        customerStatus: v.customerStatus,
+        remark: v.remark,
+        proofFile: v.proofFile?.join(", ") || ""
+      });
+    });
+  } else {
+    reportData.push({
+      customId: customer.customId,
+      customerName: customer.customerName,
+      branch: customer.branch,
+      scheme: customer.scheme,
+      balance: customer.balance,
+
+      visitDate: "",
+      customerStatus: "",
+      remark: "",
+      proofFile: ""
+    });
+  }
+});
+
+worksheet.columns = [
+  { header: "Customer ID", key: "customId", width: 15 },
+  { header: "Customer Name", key: "customerName", width: 25 },
+  { header: "Branch", key: "branch", width: 20 },
+  { header: "Scheme", key: "scheme", width: 20 },
+  { header: "Balance", key: "balance", width: 15 },
+  { header: "Visit Date", key: "visitDate", width: 20 },
+  { header: "Status", key: "customerStatus", width: 20 },
+  { header: "Remark", key: "remark", width: 40 },
+  { header: "Proof Files", key: "proofFile", width: 50 }
+];
+
+reportData.forEach(row => worksheet.addRow(row));
+worksheet.getRow(1).font = { bold: true };
+
+res.setHeader(
+  "Content-Type",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+);
+
+res.setHeader(
+  "Content-Disposition",
+  `attachment; filename=monthly-report-${month}-${year}.xlsx`
+);
+
+await workbook.xlsx.write(res);
+res.end();
+
+
+
+  } catch (error) {
+    console.error("MONTHLY REPORT ERROR:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
