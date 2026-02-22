@@ -39,6 +39,7 @@ exports.uploadCustomers = async (req, res) => {
     }
     const adminId = req.user.userId;
     const fileName = req.file.originalname;
+    const { mode = "update", replaceUploadIds = [] } = req.body;
     const fileUrl = req.file.path;
     const now = new Date();
 
@@ -47,22 +48,20 @@ const monthNames = [
   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
 ];
 
-// Base label (e.g., JAN_2026)
 const baseLabel = `${monthNames[now.getMonth()]}_${now.getFullYear()}`;
 
-// Count how many uploads already exist for this month
 const existingCount = await ExcelUpload.countDocuments({
   label: { $regex: `^${baseLabel}` }
 });
 
-// Final versioned label (e.g., JAN_2026_V1, JAN_2026_V2)
 const label = `${baseLabel}_V${existingCount + 1}`;
 
 const uploadHistory = await ExcelUpload.create({
   uploadedBy: adminId,
   label,
   fileName,
-  fileUrl
+  fileUrl,
+  replacedUploadIds: replaceUploadIds
 });
 
 
@@ -76,6 +75,14 @@ const uploadHistory = await ExcelUpload.create({
       await uploadHistory.save();
       return res.status(400).json({ message: "Excel file is empty" });
     }
+
+    if (mode === "replace" && replaceUploadIds.length) {
+      await Customer.updateMany(
+        { uploadBatchId: { $in: replaceUploadIds }, status: "PENDING" },
+        { $set: { status: "INACTIVE" } }
+      );
+    }
+
     let success = 0;
     let failed = [];
 
