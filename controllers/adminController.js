@@ -5,12 +5,24 @@ const XLSX = require("xlsx");
 const ExcelUpload = require("../models/ExcelUpload");
 const ExcelJS = require("exceljs");
 const Visit = require("../models/Visit");
+const Counter = require("../models/Counter");
 
 const generateCustomerId = async () => {
-  const count = await Customer.countDocuments();
-  return `C${(count + 1).toString().padStart(2, "0")}`;
+  const counter = await Counter.findOneAndUpdate(
+    { name: "customer" },
+    { $inc: { sequence: 1 } },
+    { new: true, upsert: true }
+  );
+
+  return `C${String(counter.sequence).padStart(4, "0")}`;
 };
 
+function parseExcelDate(dateStr) {
+  if (!dateStr) return null;
+
+  const [day, month, year] = dateStr.trim().split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
 exports.uploadCustomers = async (req, res) => {
   try {
     if (!req.file) {
@@ -59,68 +71,89 @@ const uploadHistory = await ExcelUpload.create({
     let failed = [];
 
     for (const row of rows) {
-      try {
-        let {
-          customerId,
-          customerName,
-          phone,
-          branch,
-          accountNo,
-          bankName,
-          scheme,
-          dueDate,
-          balance,
-          totalFund,
-          lastPaidAmount,
-          address,
-          isNPA,
-          assignedAgent
-        } = row;
+  try {
+    const loanId = row["CUST_ID"]?.toString().trim();
+    const customerName = row["ACCT_NAME"]?.trim();
+    const accountNo = row["ACCOUNT"]?.toString().trim();
+    const branch = row["BRANCH NAME"]?.trim();
+    const dueDate = parseExcelDate(row["DUE_DT"]);
+    const totalFund = Number(row["EMI"]) || 0;
+    const balance = Number(row["BALANCE"]) || 0;
+    const dpd = Number(row["DPD"]) || 0;
+    const arrear = Number(row["ARREAR"]) || 0;
 
-         if (!customerName || !phone || !assignedAgent) {
-          failed.push({ row, reason: "Missing required fields" });
-          continue;
-        }
-        const agent = await User.findOne({ username: assignedAgent, role: "AGENT",
-    isActive: true });
-        if (!agent) {
-          failed.push({ row, reason: `Agent ${assignedAgent} not found or inactive` });
-          continue;
-        }
-        if (!customerId) {
-          customerId = await generateCustomerId();
-        } else {
-         const existing = await Customer.findOne({ customId: customerId });
-        if (existing) {
-          failed.push({ row, reason: "Customer ID already exists" });
-          continue;
-        }
-      }
-          const newCustomer = new Customer({
-          customId: customerId,
-          customerName,
-          phone,
-          branch,
-          accountNo,
-          bankName,
-          scheme,
-          dueDate: dueDate ? new Date(dueDate) : null,
-          balance,
-          totalFund,
-          lastPaidAmount,
-          address,
-          isNPA: isNPA === "YES" || isNPA === true,
-          assignedAgentId: agent._id,
-          status: "PENDING",
-          uploadBatchId: uploadHistory._id,
-        });
-        await newCustomer.save();
-        success++;
+    const phone = row["PHONE"]?.toString().trim(); 
+    const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
 
-      } catch (err) {
-        failed.push({ row, reason: err.message });
-      }
+    if (!loanId || !customerName || !assignedAgent) {
+      failed.push({ row, reason: "Missing required fields" });
+      continue;
     }
+
+    const agent = await User.findOne({
+      username: assignedAgent,
+      role: "AGENT",
+      isActive: true
+    });
+
+    if (!agent) {
+      failed.push({ row, reason: `Agent ${assignedAgent} not found or inactive` });
+      continue;
+    }
+
+    const existingCustomer = await Customer.findOne({ loanId });
+
+    if (existingCustomer) {
+
+      existingCustomer.customerName = customerName;
+      existingCustomer.accountNo = accountNo;
+      existingCustomer.branch = branch;
+
+      existingCustomer.totalFund = totalFund;
+      existingCustomer.balance = balance;
+      existingCustomer.dpd = dpd;
+      existingCustomer.arrear = arrear;
+      existingCustomer.dueDate = dueDate;
+      existingCustomer.phone = phone;
+      existingCustomer.assignedAgentId = agent._id;
+      existingCustomer.uploadBatchId = uploadHistory._id;
+
+      existingCustomer.status = "PENDING";
+      existingCustomer.visitDate = null;
+      existingCustomer.customerStatus = null;
+      existingCustomer.updateFrom = null;
+      existingCustomer.proofFile = [];
+
+      await existingCustomer.save();
+      success++;
+      continue;
+    }
+
+    const customId = await generateCustomerId();
+
+    const newCustomer = new Customer({
+      customId,
+      loanId,
+      customerName,
+      accountNo,
+      branch,
+      totalFund,
+      balance,
+      dpd,
+      arrear,
+      phone,
+      assignedAgentId: agent._id,
+      status: "PENDING",
+      uploadBatchId: uploadHistory._id
+    });
+
+    await newCustomer.save();
+    success++;
+
+  } catch (err) {
+    failed.push({ row, reason: err.message });
+  }
+}
 
      uploadHistory.totalRows = rows.length;
     uploadHistory.successCount = success;

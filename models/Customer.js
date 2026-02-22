@@ -6,17 +6,34 @@ const customerSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+loanId: {
+  type: String,
+  required: true,
+  unique: true
+},
+
+phone: {
+  type: [String],
+  default: []
+},
+
+coBorrowerPhones: {
+  type: [String],
+  default: []
+},
+
   customerName: { type: String, required: true },
   address: String,
-  phone: String,
   branch: String,
   accountNo: String,
   bankName: String,
   scheme: String,
   dueDate: Date,
-  balance: Number,
-  totalFund: Number,
-  lastPaid: Number,
+  balance: { type: Number, default: 0 },
+  dpd: { type: Number, default: 0 },
+  arrear: { type: Number, default: 0 },
+  totalFund: { type: Number, default: 0 },
+  lastPaid: { type: Number, default: 0 },
   isNPA: Boolean,
   assignedAgentId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   status: { type: String, enum: ["PENDING", "VISITED"], default: "PENDING" },
