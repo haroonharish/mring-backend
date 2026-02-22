@@ -17,12 +17,21 @@ const generateCustomerId = async () => {
   return `C${String(counter.sequence).padStart(4, "0")}`;
 };
 
-function parseExcelDate(dateStr) {
-  if (!dateStr) return null;
+function parseExcelDate(value) {
+  if (!value) return null;
 
-  const [day, month, year] = dateStr.trim().split("-").map(Number);
-  return new Date(year, month - 1, day);
+  if (typeof value === "number") {
+    return new Date((value - 25569) * 86400 * 1000);
+  }
+
+  if (typeof value === "string") {
+    const [day, month, year] = value.trim().split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return null;
 }
+
 exports.uploadCustomers = async (req, res) => {
   try {
     if (!req.file) {
