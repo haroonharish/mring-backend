@@ -56,12 +56,20 @@ const existingCount = await ExcelUpload.countDocuments({
 
 const label = `${baseLabel}_V${existingCount + 1}`;
 
+ if (mode === "replace" && replaceUploadIds.length) {
+      await ExcelUpload.updateMany(
+        { _id: { $in: replaceUploadIds } },
+        { $set: { isCurrent: false } }
+      );
+    }
+
 const uploadHistory = await ExcelUpload.create({
   uploadedBy: adminId,
   label,
   fileName,
   fileUrl,
-  replacedUploadIds: replaceUploadIds
+  replacedUploadIds: replaceUploadIds,
+  isCurrent: true
 });
 
 
@@ -74,13 +82,6 @@ const uploadHistory = await ExcelUpload.create({
        uploadHistory.status = "FAILED";
       await uploadHistory.save();
       return res.status(400).json({ message: "Excel file is empty" });
-    }
-
-    if (mode === "replace" && replaceUploadIds.length) {
-      await Customer.updateMany(
-        { uploadBatchId: { $in: replaceUploadIds }, status: "PENDING" },
-        { $set: { status: "INACTIVE" } }
-      );
     }
 
     let success = 0;

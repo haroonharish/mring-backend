@@ -20,7 +20,7 @@ const excelUploadSchema = new mongoose.Schema({
     enum: ["SUCCESS", "PARTIAL", "FAILED"],
     default: "SUCCESS"
   },
-
+isCurrent: { type: Boolean, default: true },
   failedRows: [
     {
       rowData: Object,
