@@ -98,7 +98,9 @@ const uploadHistory = await ExcelUpload.create({
     const balance = Number(row["BALANCE"]) || 0;
     const dpd = Number(row["DPD"]) || 0;
     const arrear = Number(row["ARREAR"]) || 0;
-
+    const latestDPD = Number(row["Ltest DPD"]) || 0;
+    const latestArrears = Number(row["Ltest Arrear"]) || 0;
+    
     const phone = row["PHONE"]?.toString().trim(); 
     const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
 
@@ -130,6 +132,8 @@ const uploadHistory = await ExcelUpload.create({
       existingCustomer.balance = balance;
       existingCustomer.dpd = dpd;
       existingCustomer.arrear = arrear;
+      existingCustomer.latestDPD = latestDPD;
+      existingCustomer.latestArrears = latestArrears;
       existingCustomer.dueDate = dueDate;
       existingCustomer.phone = phone;
       existingCustomer.assignedAgentId = agent._id;
@@ -158,6 +162,9 @@ const uploadHistory = await ExcelUpload.create({
       balance,
       dpd,
       arrear,
+      latestDPD,
+      latestArrears,
+      dueDate,
       phone,
       assignedAgentId: agent._id,
       status: "PENDING",

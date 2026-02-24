@@ -34,6 +34,8 @@ coBorrowerPhones: {
   arrear: { type: Number, default: 0 },
   totalFund: { type: Number, default: 0 },
   lastPaid: { type: Number, default: 0 },
+  latestDPD: { type: Number, default: 0 },
+  latestArrears: { type: Number, default: 0 },
   isNPA: Boolean,
   assignedAgentId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   status: { type: String, enum: ["PENDING", "VISITED"], default: "PENDING" },
