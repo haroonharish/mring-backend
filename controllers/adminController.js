@@ -381,22 +381,33 @@ exports.generateBatchReport = async (req, res) => {
       return res.status(404).json({ message: "Batch not found" });
     }
 
+    const response = await axios.get(batch.fileUrl, {
+      responseType: "arraybuffer"
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(response.data);
+
+    const worksheet = workbook.worksheets[0];
+
     const customers = await Customer.find({
       uploadBatchId: uploadId
-    })
-    .populate("assignedAgentId", "username")
-    .lean();
+    }).lean();
 
     if (!customers.length) {
       return res.status(404).json({ message: "No customers found in this batch" });
     }
+
+    const loanIdToCustomId = {};
+    customers.forEach(c => {
+      loanIdToCustomId[String(c.loanId).trim()] = c.customId;
+    });
 
     const visits = await Visit.find({
       customId: { $in: customers.map(c => c.customId) }
     }).lean();
 
     const visitMap = {};
-
     visits.forEach(v => {
       if (!visitMap[v.customId]) {
         visitMap[v.customId] = [];
@@ -404,57 +415,53 @@ exports.generateBatchReport = async (req, res) => {
       visitMap[v.customId].push(v);
     });
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Batch Report");
+    const headerRow = worksheet.getRow(1);
+    const lastColumn = worksheet.columnCount;
 
-    worksheet.columns = [
-      { header: "Customer ID", key: "customId", width: 15 },
-      { header: "Customer Name", key: "customerName", width: 25 },
-      { header: "Phone", key: "phone", width: 15 },
-      { header: "Branch", key: "branch", width: 20 },
-      { header: "Scheme", key: "scheme", width: 20 },
-      { header: "Balance", key: "balance", width: 15 },
-      { header: "Assigned Agent", key: "agent", width: 20 },
-      { header: "Visit Date", key: "visitDate", width: 20 },
-      { header: "Visit Status", key: "status", width: 20 },
-      { header: "Remark", key: "remark", width: 30 }
-    ];
+    headerRow.getCell(lastColumn + 1).value = "Visit Date";
+    headerRow.getCell(lastColumn + 2).value = "Customer Status";
+    headerRow.getCell(lastColumn + 3).value = "Remark";
+    headerRow.getCell(lastColumn + 4).value = "Updated From";
+    headerRow.getCell(lastColumn + 5).value = "Proof File";
 
-    customers.forEach(customer => {
-      const customerVisits = visitMap[customer.customId];
+    headerRow.font = { bold: true };
+
+    const custIdColumnIndex = 4;
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+
+      const loanIdCellValue = row.getCell(custIdColumnIndex).value;
+
+      if (!loanIdCellValue) return;
+
+      const loanId = String(loanIdCellValue).trim();
+
+      const systemCustomId = loanIdToCustomId[loanId];
+
+      const customerVisits = visitMap[systemCustomId];
 
       if (customerVisits && customerVisits.length > 0) {
-        customerVisits.forEach(v => {
-          worksheet.addRow({
-            customId: customer.customId,
-            customerName: customer.customerName,
-            phone: customer.phone,
-            branch: customer.branch,
-            scheme: customer.scheme,
-            balance: customer.balance,
-            agent: customer.assignedAgentId?.username || "",
-            visitDate: v.visitDate,
-            status: v.customerStatus,
-            remark: v.remark
-          });
-        });
+        const visitDates = customerVisits.map(v => v.visitDate).join(", ");
+        const statuses = customerVisits.map(v => v.customerStatus).join(", ");
+        const remarks = customerVisits.map(v => v.remark).join(" | ");
+        const updateFrom = customerVisits.map(v => v.updateFrom).join(", ");
+        const proofFiles = customerVisits.map(v => v.proofFile).join(", ");
+
+        row.getCell(lastColumn + 1).value = visitDates;
+        row.getCell(lastColumn + 2).value = statuses;
+        row.getCell(lastColumn + 3).value = remarks;
+        row.getCell(lastColumn + 4).value = updateFrom;
+        row.getCell(lastColumn + 5).value = proofFiles;
+
       } else {
-        worksheet.addRow({
-          customId: customer.customId,
-          customerName: customer.customerName,
-          phone: customer.phone,
-          branch: customer.branch,
-          scheme: customer.scheme,
-          balance: customer.balance,
-          agent: customer.assignedAgentId?.username || "",
-          visitDate: "",
-          status: "NOT VISITED",
-          remark: ""
-        });
+        row.getCell(lastColumn + 1).value = "";
+        row.getCell(lastColumn + 2).value = "NOT VISITED";
+        row.getCell(lastColumn + 3).value = "";
+        row.getCell(lastColumn + 4).value = "";
+        row.getCell(lastColumn + 5).value = "";
       }
     });
-
-    worksheet.getRow(1).font = { bold: true };
 
     res.setHeader(
       "Content-Type",
@@ -463,7 +470,7 @@ exports.generateBatchReport = async (req, res) => {
 
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=batch-report-${batch.label}.xlsx`
+      `attachment; filename=report-${batch.label}.xlsx`
     );
 
     await workbook.xlsx.write(res);
