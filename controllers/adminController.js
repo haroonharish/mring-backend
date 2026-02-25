@@ -212,8 +212,7 @@ if (missingFields.length > 0) {
       success,
       failedCount: failed.length,
       fileUrl,
-      errors: failed.map(f =>
-    `Row ${f.rowNumber} – CUST_ID ${f.custId} – ${f.message}`
+      
     });
 
   } catch (err) {
