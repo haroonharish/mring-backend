@@ -127,10 +127,14 @@ if (missingFields.length > 0) {
       isActive: true
     });
 
-    if (!agent) {
-      failed.push({ row, reason: `Agent ${assignedAgent} not found or inactive` });
-      continue;
-    }
+if (!agent) {
+  failed.push({
+    rowNumber,
+    custId: loanId || "N/A",
+    message: `Agent ${assignedAgent} not found or inactive`
+  });
+  continue;
+}
 
     const existingCustomer = await Customer.findOne({ loanId });
 
@@ -187,8 +191,12 @@ if (missingFields.length > 0) {
     success++;
 
   } catch (err) {
-    failed.push({ row, reason: err.message });
-  }
+  failed.push({
+    rowNumber,
+    custId: row["CUST_ID"] || "N/A",
+    message: err.message
+  });
+}
 }
 
      uploadHistory.totalRows = rows.length;
