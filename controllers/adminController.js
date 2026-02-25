@@ -87,8 +87,10 @@ const uploadHistory = await ExcelUpload.create({
     let success = 0;
     let failed = [];
 
-    for (const row of rows) {
-  try {
+for (let i = 0; i < rows.length; i++) {
+  const row = rows[i];
+  const rowNumber = i + 2;
+    try {
     const loanId = row["CUST_ID"]?.toString().trim();
     const customerName = row["ACCT_NAME"]?.trim();
     const accountNo = row["ACCOUNT"]?.toString().trim();
@@ -104,10 +106,20 @@ const uploadHistory = await ExcelUpload.create({
     const phone = row["PHONE"]?.toString().trim(); 
     const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
 
-    if (!loanId || !customerName || !assignedAgent) {
-      failed.push({ row, reason: "Missing required fields" });
-      continue;
-    }
+    let missingFields = [];
+
+if (!loanId) missingFields.push("CUST_ID");
+if (!customerName) missingFields.push("ACCT_NAME");
+if (!assignedAgent) missingFields.push("ASSIGNED_AGENT");
+
+if (missingFields.length > 0) {
+  failed.push({
+    rowNumber,
+    custId: loanId || "N/A",
+    message: `Missing required field(s): ${missingFields.join(", ")}`
+  });
+  continue;
+}
 
     const agent = await User.findOne({
       username: assignedAgent,
@@ -199,7 +211,9 @@ const uploadHistory = await ExcelUpload.create({
       total: rows.length,
       success,
       failedCount: failed.length,
-      fileUrl
+      fileUrl,
+      errors: failed.map(f =>
+    `Row ${f.rowNumber} – CUST_ID ${f.custId} – ${f.message}`
     });
 
   } catch (err) {
