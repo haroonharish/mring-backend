@@ -21,12 +21,13 @@ const excelUploadSchema = new mongoose.Schema({
     default: "SUCCESS"
   },
 isCurrent: { type: Boolean, default: true },
-  failedRows: [
-    {
-      rowData: Object,
-      reason: String
-    }
-  ],
+failedRows: [
+  {
+    rowNumber: { type: Number },
+    custId: { type: String },
+    message: { type: String }
+  }
+],
 
   createdAt: { type: Date, default: Date.now }
 });
