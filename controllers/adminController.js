@@ -220,7 +220,7 @@ if (!agent) {
       success,
       failedCount: failed.length,
       fileUrl,
-      
+      errors: failed
     });
 
   } catch (err) {
