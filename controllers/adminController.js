@@ -366,7 +366,9 @@ if (!agent) return res.status(404).json({ message: "Agent not found" });
           address: 1,
           isNPA: 1,
           status: 1,
-          lastRemark: "$lastVisit.remark"
+          lastRemark: "$lastVisit.remark",
+          proofFiles: "$lastVisit.proofFiles",
+          visitDate: "$lastVisit.visitDate"
         }
       }
     ]);
@@ -509,3 +511,4 @@ exports.generateBatchReport = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
