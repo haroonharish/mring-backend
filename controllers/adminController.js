@@ -394,7 +394,21 @@ exports.getExcelUploadHistory = async (req, res) => {
       .populate("uploadedBy", "username fullName")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(uploads);
+    const formatted = uploads.map(u => ({
+      uploadId: u._id,
+      label: u.label,
+      fileName: u.fileName,
+      uploadedBy: u.uploadedBy?.username,
+      uploadedAt: u.createdAt,
+      status: u.status,
+      totalRows: u.totalRows,
+      successCount: u.successCount,
+      failedCount: u.failedCount,
+      isCurrent: u.isCurrent,
+      errors: u.failedRows
+    }));
+
+    res.status(200).json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
