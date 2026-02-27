@@ -369,7 +369,7 @@ if (!agent) return res.status(404).json({ message: "Agent not found" });
           isNPA: 1,
           status: 1,
           lastRemark: "$lastVisit.remark",
-          proofFiles: "$lastVisit.proofFiles",
+          proofFile: "$lastVisit.proofFile",
           visitDate: "$lastVisit.visitDate",
           latitude: { $arrayElemAt: ["$lastVisit.location.coordinates", 1] },
           longitude: { $arrayElemAt: ["$lastVisit.location.coordinates", 0] },
