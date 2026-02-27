@@ -371,7 +371,8 @@ if (!agent) return res.status(404).json({ message: "Agent not found" });
           lastRemark: "$lastVisit.remark",
           proofFiles: "$lastVisit.proofFiles",
           visitDate: "$lastVisit.visitDate",
-          location: "$lastVisit.location"
+          latitude: { $arrayElemAt: ["$lastVisit.location.coordinates", 1] },
+          longitude: { $arrayElemAt: ["$lastVisit.location.coordinates", 0] },
         }
       }
     ]);
