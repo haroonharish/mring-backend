@@ -329,6 +329,27 @@ exports.getAgentCustomers = async (req, res) => {
     // 1️⃣ Find the agent
     const agent = await User.findOne({ customId: agentCustomId, role: "AGENT" });
 if (!agent) return res.status(404).json({ message: "Agent not found" });
+const latestVisit = await Visit.findOne(
+  { agentId: agent._id },
+  {},
+  { sort: { visitDate: -1 } }
+);
+
+let latestLocation = null;
+
+    if (
+      latestVisit &&
+      latestVisit.location &&
+      latestVisit.location.coordinates &&
+      latestVisit.location.coordinates.length === 2
+    ) {
+      latestLocation = {
+        latitude: latestVisit.location.coordinates[1],
+        longitude: latestVisit.location.coordinates[0],
+        visitDate: latestVisit.visitDate
+      };
+    }
+
     // 2️⃣ Aggregate customers with latest visit
     const customers = await Customer.aggregate([
       { $match: { assignedAgentId: agent._id } },
@@ -380,7 +401,8 @@ if (!agent) return res.status(404).json({ message: "Agent not found" });
     res.json({
       agent: {
         agentId: agent.customId,
-        name: agent.fullName
+        name: agent.fullName,
+        latestLocation
       },
       customers
     });
