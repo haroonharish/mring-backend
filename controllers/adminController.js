@@ -370,7 +370,8 @@ if (!agent) return res.status(404).json({ message: "Agent not found" });
           status: 1,
           lastRemark: "$lastVisit.remark",
           proofFiles: "$lastVisit.proofFiles",
-          visitDate: "$lastVisit.visitDate"
+          visitDate: "$lastVisit.visitDate",
+          location: "$lastVisit.location"
         }
       }
     ]);
