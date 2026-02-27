@@ -395,7 +395,7 @@ exports.getExcelUploadHistory = async (req, res) => {
       .sort({ createdAt: -1 });
 
     const formatted = uploads.map(u => ({
-      uploadId: u._id,
+      _id: u._id,
       label: u.label,
       fileName: u.fileName,
       uploadedBy: u.uploadedBy?.username,
