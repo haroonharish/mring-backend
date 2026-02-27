@@ -337,7 +337,7 @@ if (!agent) return res.status(404).json({ message: "Agent not found" });
       { $lookup: {
           from: "visits",
           localField: "customId",
-          foreignField: "customerId",
+          foreignField: "customId",
           as: "visits"
         }
       },
