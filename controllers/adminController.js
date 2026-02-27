@@ -56,20 +56,13 @@ const existingCount = await ExcelUpload.countDocuments({
 
 const label = `${baseLabel}_V${existingCount + 1}`;
 
- if (mode === "replace" && replaceUploadIds.length) {
-      await ExcelUpload.updateMany(
-        { _id: { $in: replaceUploadIds } },
-        { $set: { isCurrent: false } }
-      );
-    }
-
 const uploadHistory = await ExcelUpload.create({
   uploadedBy: adminId,
   label,
   fileName,
   fileUrl,
   replacedUploadIds: replaceUploadIds,
-  isCurrent: true
+  isCurrent: false
 });
 
 
@@ -210,6 +203,15 @@ if (!agent) {
         : success === 0
         ? "FAILED"
         : "PARTIAL";
+
+    if (mode === "replace" && uploadHistory.status !== "FAILED") {
+  await ExcelUpload.updateMany(
+    { _id: { $in: replaceUploadIds } },
+    { $set: { isCurrent: false } }
+  );
+
+  uploadHistory.isCurrent = true;
+}
 
     await uploadHistory.save();
 
