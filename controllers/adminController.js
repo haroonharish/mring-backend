@@ -87,7 +87,8 @@ for (let i = 0; i < rows.length; i++) {
     const loanId = row["CUST_ID"]?.toString().trim();
     const customerName = row["ACCT_NAME"]?.trim();
     const accountNo = row["ACCOUNT"]?.toString().trim();
-    const branch = row["BRANCH NAME"]?.trim();
+    const branch = row["BRANCHNAME"]?.trim();
+    const scheme = row["SCHEME"]?.trim();
     const dueDate = parseExcelDate(row["DUE_DT"]);
     const totalFund = Number(row["EMI"]) || 0;
     const balance = Number(row["BALANCE"]) || 0;
@@ -136,7 +137,7 @@ if (!agent) {
       existingCustomer.customerName = customerName;
       existingCustomer.accountNo = accountNo;
       existingCustomer.branch = branch;
-
+      existingCustomer.scheme = scheme;
       existingCustomer.totalFund = totalFund;
       existingCustomer.balance = balance;
       existingCustomer.dpd = dpd;
