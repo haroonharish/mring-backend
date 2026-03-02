@@ -345,6 +345,7 @@ exports.getAgentsSummary = async (req, res) => {
         isActive: 1,
         totalCustomers: 1,
         completedCustomers: 1,
+        phoneNumber: 1,
         latestLocation: {
             latitude: "$latestVisit.latitude",
             longitude: "$latestVisit.longitude",
