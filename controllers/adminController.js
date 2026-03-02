@@ -95,7 +95,7 @@ for (let i = 0; i < rows.length; i++) {
     const arrear = Number(row["ARREAR"]) || 0;
     const latestDPD = Number(row["Ltest DPD"]) || 0;
     const latestArrears = Number(row["Ltest Arrear"]) || 0;
-    
+    const address = row["ADDRESS"]?.trim();
     const phone = row["PHONE"]?.toString().trim(); 
     const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
 
@@ -147,7 +147,7 @@ if (!agent) {
       existingCustomer.phone = phone;
       existingCustomer.assignedAgentId = agent._id;
       existingCustomer.uploadBatchId = uploadHistory._id;
-
+      existingCustomer.address = address;
       existingCustomer.status = "PENDING";
       existingCustomer.visitDate = null;
       existingCustomer.customerStatus = null;
@@ -165,6 +165,7 @@ if (!agent) {
       customId,
       loanId,
       customerName,
+      address,
       accountNo,
       branch,
       totalFund,
