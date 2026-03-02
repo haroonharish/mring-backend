@@ -299,6 +299,36 @@ exports.getAgentsSummary = async (req, res) => {
         as: "customers"
       }
     },
+          {
+        $lookup: {
+          from: "visits",
+          let: { agentId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$agentId", "$$agentId"] }
+              }
+            },
+            { $sort: { actionDoneDate: -1 } }, // 🔥 IMPORTANT
+            { $limit: 1 },
+            {
+              $project: {
+                actionDoneDate: 1,
+                latitude: { $arrayElemAt: ["$location.coordinates", 1] },
+                longitude: { $arrayElemAt: ["$location.coordinates", 0] }
+              }
+            }
+          ],
+          as: "latestVisit"
+        }
+      },
+      {
+        $unwind: {
+          path: "$latestVisit",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+
     { $addFields: {
         totalCustomers: { $size: "$customers" },
         completedCustomers: { 
@@ -314,9 +344,14 @@ exports.getAgentsSummary = async (req, res) => {
         name: "$fullName",
         isActive: 1,
         totalCustomers: 1,
-        completedCustomers: 1
+        completedCustomers: 1,
+        latestLocation: {
+            latitude: "$latestVisit.latitude",
+            longitude: "$latestVisit.longitude",
+            actionDoneDate: "$latestVisit.actionDoneDate"
       }
     }
+  }
   ]);
 
   res.json({ agents });
