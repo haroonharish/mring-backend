@@ -359,10 +359,16 @@ exports.getAgentsSummary = async (req, res) => {
           totalCustomers: 1,
           completedCustomers: 1,
           latestLocation: {
+             $cond: [
+        { $ifNull: ["$latestVisit", false] },
+        {
             latitude: "$latestVisit.latitude",
             longitude: "$latestVisit.longitude",
             actionDoneDate: "$latestVisit.actionDoneDate"
-          }
+          },
+          null
+        ]
+      }
         }
       }
     ]);
