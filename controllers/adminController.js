@@ -482,7 +482,7 @@ exports.getExcelUploadHistory = async (req, res) => {
       _id: u._id,
       label: u.label,
       fileName: u.fileName,
-      uploadedBy: u.uploadedBy?.username,
+      uploadedBy: u.uploadedBy?.fullName,
       uploadedAt: u.createdAt,
       status: u.status,
       totalRows: u.totalRows,
