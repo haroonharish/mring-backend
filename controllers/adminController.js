@@ -62,7 +62,7 @@ const uploadHistory = await ExcelUpload.create({
   fileName,
   fileUrl,
   replacedUploadIds: replaceUploadIds,
-  isCurrent: false
+  isCurrent: true
 });
 
 
