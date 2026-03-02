@@ -99,13 +99,11 @@ for (let i = 0; i < rows.length; i++) {
     const address = row["ADDRESS"]?.trim();
     const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
     const collectPhones = (row, fields) => {
-  return [...new Set(
-    fields
+    return fields
       .map(field => row[field])
       .filter(Boolean)
       .map(num => num.toString().trim())
       .filter(num => num.length > 0)
-  )];
 };
 
 const phones = collectPhones(row, [
