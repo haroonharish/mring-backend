@@ -5,7 +5,7 @@ const Customer = require("../models/Customer");
 
 exports.createVisit = async (req, res) => {
   try {
-    const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude } = req.body;
+    const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude, actionDoneDate, time } = req.body;
 
     if (!customId || !visitDate || !customerStatus || !updateFrom) {
       return res.status(400).json({ message: "All required fields must be provided" });
@@ -36,6 +36,8 @@ exports.createVisit = async (req, res) => {
       customerStatus: customerStatusNormalized,
       remark,
       updateFrom: updateFromNormalized,
+      actionDoneDate,
+      time,
       proofFile,
       location: {
         type: "Point",
