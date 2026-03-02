@@ -464,6 +464,7 @@ let latestLocation = null;
       { $project: {
           _id: 0,
           customerId: "$customId",
+          loanId: 1,
           customerName: 1,
           branch: 1,
           accountNo: 1,
