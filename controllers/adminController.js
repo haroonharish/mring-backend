@@ -97,8 +97,32 @@ for (let i = 0; i < rows.length; i++) {
     const latestDPD = Number(row["Ltest DPD"]) || 0;
     const latestArrears = Number(row["Ltest Arrear"]) || 0;
     const address = row["ADDRESS"]?.trim();
-    const phone = row["PHONE"]?.toString().trim(); 
     const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
+    const collectPhones = (row, fields) => {
+  return [...new Set(
+    fields
+      .map(field => row[field])
+      .filter(Boolean)
+      .map(num => num.toString().trim())
+      .filter(num => num.length > 0)
+  )];
+};
+
+const phones = collectPhones(row, [
+  "MOB_NUM",
+  "PHONE",
+  "PHONE_2",
+  "PHONE_3",
+  "PHONE_4"
+]);
+
+const coBorrowerPhones = collectPhones(row, [
+  "CO_BOR_PHONE",
+  "CO_BOR_PHONE_2",
+  "CO_BOR_PHONE_3",
+  "CO_BOR_PHONE_4"
+]);
+
 
     let missingFields = [];
 
@@ -145,7 +169,8 @@ if (!agent) {
       existingCustomer.latestDPD = latestDPD;
       existingCustomer.latestArrears = latestArrears;
       existingCustomer.dueDate = dueDate;
-      existingCustomer.phone = phone;
+      existingCustomer.phone = phones;
+      existingCustomer.coBorrowerPhones = coBorrowerPhones;
       existingCustomer.assignedAgentId = agent._id;
       existingCustomer.uploadBatchId = uploadHistory._id;
       existingCustomer.address = address;
@@ -177,7 +202,8 @@ if (!agent) {
       latestDPD,
       latestArrears,
       dueDate,
-      phone,
+      phone: phones,
+      coBorrowerPhones,
       assignedAgentId: agent._id,
       status: "PENDING",
       uploadBatchId: uploadHistory._id
