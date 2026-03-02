@@ -475,6 +475,7 @@ let latestLocation = null;
           lastPaidAmount: 1,
           phone: 1,
           address: 1,
+          coBorrowerPhones: 1,
           isNPA: 1,
           status: 1,
           lastRemark: "$lastVisit.remark",
