@@ -290,16 +290,20 @@ exports.getCustomerReports = async (req, res) => {
 };
 
 exports.getAgentsSummary = async (req, res) => {
-  const agents = await User.aggregate([
-    { $match: { role: "AGENT" } },
-    { $lookup: {
-        from: "customers",
-        localField: "_id",
-        foreignField: "assignedAgentId",
-        as: "customers"
-      }
-    },
-          {
+  try {
+    const agents = await User.aggregate([
+      { $match: { role: "AGENT" } },
+
+      {
+        $lookup: {
+          from: "customers",
+          localField: "_id",
+          foreignField: "assignedAgentId",
+          as: "customers"
+        }
+      },
+
+      {
         $lookup: {
           from: "visits",
           let: { agentId: "$_id" },
@@ -309,7 +313,7 @@ exports.getAgentsSummary = async (req, res) => {
                 $expr: { $eq: ["$agentId", "$$agentId"] }
               }
             },
-            { $sort: { actionDoneDate: -1 } }, // 🔥 IMPORTANT
+            { $sort: { actionDoneDate: -1 } },
             { $limit: 1 },
             {
               $project: {
@@ -322,6 +326,7 @@ exports.getAgentsSummary = async (req, res) => {
           as: "latestVisit"
         }
       },
+
       {
         $unwind: {
           path: "$latestVisit",
@@ -329,33 +334,45 @@ exports.getAgentsSummary = async (req, res) => {
         }
       },
 
-    { $addFields: {
-        totalCustomers: { $size: "$customers" },
-        completedCustomers: { 
-          $size: { 
-            $filter: { input: "$customers", as: "c", cond: { $eq: ["$$c.status", "VISITED"] } } 
-          } 
+      {
+        $addFields: {
+          totalCustomers: { $size: "$customers" },
+          completedCustomers: {
+            $size: {
+              $filter: {
+                input: "$customers",
+                as: "c",
+                cond: { $eq: ["$$c.status", "VISITED"] }
+              }
+            }
+          }
         }
-      }
-    },
-    { $project: {
-        _id: 0,
-        agentId: "$customId",
-        name: "$fullName",
-        isActive: 1,
-        totalCustomers: 1,
-        completedCustomers: 1,
-        phoneNumber: 1,
-        latestLocation: {
+      },
+
+      {
+        $project: {
+          _id: 0,
+          agentId: "$customId",
+          name: "$fullName",
+          phoneNumber: 1,
+          isActive: 1,
+          totalCustomers: 1,
+          completedCustomers: 1,
+          latestLocation: {
             latitude: "$latestVisit.latitude",
             longitude: "$latestVisit.longitude",
             actionDoneDate: "$latestVisit.actionDoneDate"
+          }
+        }
       }
-    }
-  }
-  ]);
+    ]);
 
-  res.json({ agents });
+    res.status(200).json({ agents });
+
+  } catch (err) {
+    console.error("Agent Summary Error:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.getAgentCustomers = async (req, res) => {
