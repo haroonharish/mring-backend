@@ -99,6 +99,9 @@ for (let i = 0; i < rows.length; i++) {
     const arrear = Number(row["ARREAR"]) || 0;
     const latestDPD = Number(row["Ltest DPD"]) || 0;
     const latestArrears = Number(row["Ltest Arrear"]) || 0;
+    const lastPaidTotal = Number(row["Paid Total"]) || 0;
+    const lastPaidDate = parseExcelDate(row["Last Pd Dt"]);
+    const npaDate = parseExcelDate(row["NPA Date"]);
     const address = row["ADDRESS"]?.trim();
     const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
     const collectPhones = (row, fields) => {
@@ -169,6 +172,9 @@ if (!agent) {
       existingCustomer.arrear = arrear;
       existingCustomer.latestDPD = latestDPD;
       existingCustomer.latestArrears = latestArrears;
+      existingCustomer.lastPaidTotal = lastPaidTotal;
+      existingCustomer.lastPaidDate = lastPaidDate;
+      existingCustomer.npaDate = npaDate;
       existingCustomer.dueDate = dueDate;
       existingCustomer.phone = phones;
       existingCustomer.coBorrowerPhones = coBorrowerPhones;
@@ -202,6 +208,9 @@ if (!agent) {
       arrear,
       latestDPD,
       latestArrears,
+      lastPaidTotal,
+      lastPaidDate,
+      npaDate,
       dueDate,
       phone: phones,
       coBorrowerPhones,
@@ -667,7 +676,7 @@ exports.deleteUpload = async (req, res) => {
     if (!upload) {
       return res.status(404).json({ message: "Upload not found" });
     }
-    
+
     if (new Date() > upload.rollbackAllowedUntil) {
   return res.status(400).json({
     message: "Rollback window expired. You can only delete within 1 minute of upload."
