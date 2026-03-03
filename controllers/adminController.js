@@ -537,6 +537,7 @@ exports.getExcelUploadHistory = async (req, res) => {
       _id: u._id,
       label: u.label,
       fileName: u.fileName,
+      fileUrl: u.fileUrl,
       uploadedBy: u.uploadedBy?.fullName,
       uploadedAt: u.createdAt,
       status: u.status,
