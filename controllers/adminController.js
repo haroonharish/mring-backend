@@ -237,6 +237,16 @@ if (!agent) {
     { $set: { isCurrent: false } }
   );
 
+  await Customer.updateMany(
+    { uploadBatchId: { $in: replaceUploadIds } },
+    { $set: { isActive: false } }
+  );
+
+  await Customer.updateMany(
+    { uploadBatchId: uploadHistory._id },
+    { $set: { isActive: true } }
+  );
+
   uploadHistory.isCurrent = true;
 }
 

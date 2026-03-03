@@ -9,7 +9,7 @@ const generateCustomerId = async () => {
 exports.getCustomers = async (req, res) => {
   try {
     const agentId = req.user.userId; 
-    const customers = await Customer.find({ assignedAgentId: agentId });
+    const customers = await Customer.find({ assignedAgentId: agentId, isActive: true });
     res.json({ customers });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -49,7 +49,8 @@ exports.getPendingCustomers = async (req, res) => {
 
     const customers = await Customer.find({
       assignedAgentId: agentId,
-      status: "PENDING"
+      status: "PENDING",
+      isActive: true
     }).sort({ createdAt: -1 });
 
     res.status(200).json(customers);

@@ -21,7 +21,7 @@ coBorrowerPhones: {
   type: [String],
   default: []
 },
-
+isActive: { type: Boolean, default: true },
   customerName: { type: String, required: true },
   address: String,
   branch: String,
