@@ -56,13 +56,16 @@ const existingCount = await ExcelUpload.countDocuments({
 
 const label = `${baseLabel}_V${existingCount + 1}`;
 
+const ROLLBACK_WINDOW_SECONDS = 60;
+
 const uploadHistory = await ExcelUpload.create({
   uploadedBy: adminId,
   label,
   fileName,
   fileUrl,
   replacedUploadIds: replaceUploadIds,
-  isCurrent: true
+  isCurrent: true,
+  rollbackAllowedUntil: new Date(Date.now() + ROLLBACK_WINDOW_SECONDS * 1000)
 });
 
 
@@ -664,7 +667,12 @@ exports.deleteUpload = async (req, res) => {
     if (!upload) {
       return res.status(404).json({ message: "Upload not found" });
     }
-
+    
+    if (new Date() > upload.rollbackAllowedUntil) {
+  return res.status(400).json({
+    message: "Rollback window expired. You can only delete within 1 minute of upload."
+  });
+}
       if (
       upload.isCurrent &&
       (!upload.replacedUploadIds || upload.replacedUploadIds.length === 0)
