@@ -101,14 +101,27 @@ exports.getVisitedCustomers = async (req, res) => {
 
       return {
         customId: id,
+        loanId: c?.loanId,
         customerName: c?.customerName,
         phone: c?.phone,
         address: c?.address,
         branch: c?.branch,
+        accountNo: c?.accountNo,
+        bankName: c?.bankName,
+        totalFund: c?.totalFund,
         scheme: c?.scheme,
         balance: c?.balance,
         dueDate: c?.dueDate,
         isNPA: c?.isNPA,
+        dpd: c?.dpd,
+        arrear: c?.arrear,
+        totalFund: c?.totalFund,
+        lastPaid: c?.lastPaid,
+        latestDPD: c?.latestDPD,
+        latestArrears: c?.latestArrears,
+        lastPaidDate: c?.lastPaidDate,
+        lastPaidTotal: c?.lastPaidTotal,
+        npaDate: c?.npaDate,
 
         visit: {
           visitDate: v.visitDate,
