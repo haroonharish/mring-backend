@@ -9,4 +9,5 @@ router.get("/agent-summary",auth(["ADMIN"]), getAgentsSummary);
 router.get("/agent/:agentCustomId/Customers",auth(["ADMIN"]), getAgentCustomers);
 router.get("/upload-history", auth(["ADMIN"]), getExcelUploadHistory);
 router.get("/report/batch/:uploadId", auth(["ADMIN"]), generateBatchReport);
+router.delete("/excel-upload/:uploadId", auth(["ADMIN"]), deleteUpload);
 module.exports = router;

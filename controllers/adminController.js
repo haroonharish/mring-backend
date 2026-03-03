@@ -655,3 +655,56 @@ exports.generateBatchReport = async (req, res) => {
   }
 };
 
+exports.deleteUpload = async (req, res) => {
+  try {
+    const { uploadId } = req.params;
+
+    const upload = await ExcelUpload.findById(uploadId);
+
+    if (!upload) {
+      return res.status(404).json({ message: "Upload not found" });
+    }
+
+      if (
+      upload.isCurrent &&
+      (!upload.replacedUploadIds || upload.replacedUploadIds.length === 0)
+    ) {
+      return res.status(400).json({
+        message: "Cannot delete the only active upload. No previous batch to restore."
+      });
+    }
+
+    const isCurrent = upload.isCurrent;
+    
+    if (isCurrent) {
+
+      await Customer.updateMany(
+        { uploadBatchId: upload._id },
+        { $set: { isActive: false } }
+      );
+
+      if (upload.replacedUploadIds?.length > 0) {
+
+        await ExcelUpload.updateMany(
+          { _id: { $in: upload.replacedUploadIds } },
+          { $set: { isCurrent: true } }
+        );
+
+        await Customer.updateMany(
+          { uploadBatchId: { $in: upload.replacedUploadIds } },
+          { $set: { isActive: true } }
+        );
+      }
+    }
+
+    await ExcelUpload.findByIdAndDelete(uploadId);
+
+    res.status(200).json({
+      message: "Upload deleted successfully and system rolled back"
+    });
+
+  } catch (err) {
+    console.error("DELETE UPLOAD ERROR:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
