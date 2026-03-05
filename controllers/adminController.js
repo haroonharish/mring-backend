@@ -403,6 +403,7 @@ exports.getAgentsSummary = async (req, res) => {
           _id: 0,
           agentId: "$customId",
           name: "$fullName",
+          username: 1,
           phoneNumber: 1,
           isActive: 1,
           totalCustomers: 1,
@@ -517,6 +518,7 @@ let latestLocation = null;
       agent: {
         agentId: agent.customId,
         name: agent.fullName,
+        username: agent.username,
         latestLocation
       },
       customers
