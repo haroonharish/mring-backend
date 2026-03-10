@@ -728,3 +728,12 @@ exports.deleteUpload = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+exports.getAttendance = async (req, res) => {
+
+  const records = await Attendance.find()
+    .populate("agentId", "username");
+
+  res.json(records);
+
+};
