@@ -2,6 +2,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Attendance = require("../models/Attendance");
 
 const generateUserId = async (role) => {
   const prefix = role === "ADMIN" ? "AD" : "AG";
@@ -169,4 +170,86 @@ exports.restoreAgent = async (req, res) => {
   await agent.save();
 
   res.json({ message: "Agent restored successfully" });
+};
+
+exports.checkIn = async (req, res) => {
+  try {
+    const agentId = req.user.userId;
+    const { lat, lng } = req.body;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const existing = await Attendance.findOne({
+      agentId,
+      date: today
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        message: "Already checked in today"
+      });
+    }
+
+    const attendance = new Attendance({
+      agentId,
+      date: today,
+      checkInTime: new Date(),
+      checkInLocation: { lat, lng }
+    });
+
+    await attendance.save();
+
+    res.json({
+      message: "Checked in successfully",
+      attendance
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.checkOut = async (req, res) => {
+  try {
+    const agentId = req.user.userId;
+    const { lat, lng } = req.body;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const attendance = await Attendance.findOne({
+      agentId,
+      date: today
+    });
+
+    if (!attendance) {
+      return res.status(400).json({
+        message: "Check-in required first"
+      });
+    }
+
+    if (attendance.checkOutTime) {
+      return res.status(400).json({
+        message: "Already checked out"
+      });
+    }
+
+    attendance.checkOutTime = new Date();
+    attendance.checkOutLocation = { lat, lng };
+
+    const hours =
+      (attendance.checkOutTime - attendance.checkInTime) /
+      (1000 * 60 * 60);
+
+    attendance.totalWorkHours = hours;
+
+    await attendance.save();
+
+    res.json({
+      message: "Checked out successfully",
+      attendance
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

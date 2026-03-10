@@ -10,4 +10,6 @@ router.post("/reset-agent-password", authMiddleware(["ADMIN"]), authController.r
 router.post("/change-password", authMiddleware(["AGENT", "ADMIN"]), authController.changePassword);
 router.post("/admin/agent/delete",authMiddleware(["ADMIN"]), authController.deleteAgent);
 router.post("/admin/agent/restore",authMiddleware(["ADMIN"]), authController.restoreAgent);
+router.post("/checkin", authMiddleware(["AGENT"]), authController.checkIn);
+router.post("/checkout", authMiddleware(["AGENT"]), authController.checkOut);
 module.exports = router;
