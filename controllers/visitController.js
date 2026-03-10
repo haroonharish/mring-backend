@@ -2,11 +2,25 @@
 const mongoose = require("mongoose");
 const Visit = require("../models/Visit");
 const Customer = require("../models/Customer");
+const Attendance = require("../models/Attendance");
 
 exports.createVisit = async (req, res) => {
   try {
     const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude, actionDoneDate, time } = req.body;
+    const agentId = req.user.userId;
 
+    const today = new Date().toISOString().split("T")[0];
+
+    const attendance = await Attendance.findOne({
+      agentId,
+      date: today
+    });
+
+    if (!attendance || !attendance.checkInTime) {
+      return res.status(403).json({
+        message: "Please check in before visiting customers"
+      });
+    }
     if (!customId || !visitDate || !customerStatus || !updateFrom) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
@@ -16,8 +30,6 @@ exports.createVisit = async (req, res) => {
       .replace(" ", "_");
 
     const updateFromNormalized = updateFrom.toUpperCase();
-
-    const agentId = req.user.userId;
 
     const customer = await Customer.findOne({ customId });
     if (!customer) {
