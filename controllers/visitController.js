@@ -21,6 +21,13 @@ exports.createVisit = async (req, res) => {
         message: "Please check in before visiting customers"
       });
     }
+
+    if (attendance.checkOutTime) {
+  return res.status(403).json({
+    message: "You have already checked out"
+  });
+}
+
     if (!customId || !visitDate || !customerStatus || !updateFrom) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
