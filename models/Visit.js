@@ -6,6 +6,7 @@ const visitSchema = new mongoose.Schema({
     type: String, // C01
     required: true
   },
+  dispoLocationStatus: { type: String}, 
   visitDate: { type: Date, required: true },
   actionDoneDate: { type: Date, required: true },
   customerStatus: { type: String, enum: ["NEXT_WEEK", "NEXT_MONTH", "WILL_NOT_GIVE"], required: true },
