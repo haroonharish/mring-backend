@@ -12,4 +12,5 @@ router.post("/admin/agent/delete",authMiddleware(["ADMIN"]), authController.dele
 router.post("/admin/agent/restore",authMiddleware(["ADMIN"]), authController.restoreAgent);
 router.post("/checkin", authMiddleware(["AGENT"]), authController.checkIn);
 router.post("/checkout", authMiddleware(["AGENT"]), authController.checkOut);
+router.get("/attendance/status", authMiddleware(["AGENT"]), authController.getAttendanceStatus);
 module.exports = router;

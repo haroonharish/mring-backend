@@ -253,3 +253,38 @@ exports.checkOut = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.getAttendanceStatus = async (req, res) => {
+  try {
+    const agentId = req.user.userId;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const attendance = await Attendance.findOne({
+      agentId,
+      date: today
+    });
+
+    if (!attendance) {
+      return res.json({
+        status: "NOT_CHECKED_IN"
+      });
+    }
+
+    if (attendance.checkOutTime) {
+      return res.json({
+        status: "CHECKED_OUT",
+        checkInTime: attendance.checkInTime,
+        checkOutTime: attendance.checkOutTime
+      });
+    }
+
+    return res.json({
+      status: "CHECKED_IN",
+      checkInTime: attendance.checkInTime
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
