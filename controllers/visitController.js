@@ -6,7 +6,7 @@ const Attendance = require("../models/Attendance");
 
 exports.createVisit = async (req, res) => {
   try {
-    const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude, actionDoneDate, dispoLocationStatus } = req.body;
+    const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude, actionDoneDate, dispoLocationstatus } = req.body;
     const agentId = req.user.userId;
 
     const today = new Date().toISOString().split("T")[0];
@@ -57,7 +57,7 @@ exports.createVisit = async (req, res) => {
       updateFrom: updateFromNormalized,
       actionDoneDate,
       time,
-      dispoLocationStatus,
+      dispoLocationstatus,
       proofFile,
       location: {
         type: "Point",
