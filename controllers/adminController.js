@@ -729,7 +729,7 @@ exports.deleteUpload = async (req, res) => {
   }
 };
 
-exports.getAgentAttendance = async (req, res) => {
+exports.getAttendance = async (req, res) => {
   try {
     const { agentId } = req.params;
     const { startDate, endDate } = req.query;
