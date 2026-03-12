@@ -729,11 +729,26 @@ exports.deleteUpload = async (req, res) => {
   }
 };
 
-exports.getAttendance = async (req, res) => {
+exports.getAgentAttendance = async (req, res) => {
+  try {
+    const { agentId } = req.params;
+    const { startDate, endDate } = req.query;
 
-  const records = await Attendance.find()
-    .populate("agentId", "username");
+    let filter = { agentId };
 
-  res.json(records);
+    if (startDate || endDate) {
+  filter.date = {};
+  if (startDate) filter.date.$gte = startDate;
+  if (endDate) filter.date.$lte = endDate;
+}
 
+    const records = await Attendance.find(filter)
+      .populate("agentId", "username")
+      .sort({ date: -1 });
+
+    res.json(records);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
