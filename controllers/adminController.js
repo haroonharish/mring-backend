@@ -400,7 +400,7 @@ exports.getAgentsSummary = async (req, res) => {
 
       {
         $project: {
-          _id: 0,
+          _id: 1,
           agentId: "$customId",
           name: "$fullName",
           username: 1,
