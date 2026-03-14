@@ -6,6 +6,7 @@ const ExcelUpload = require("../models/ExcelUpload");
 const ExcelJS = require("exceljs");
 const Visit = require("../models/Visit");
 const Counter = require("../models/Counter");
+const Attendance = require("../models/Attendance");
 
 const generateCustomerId = async () => {
   const counter = await Counter.findOneAndUpdate(
