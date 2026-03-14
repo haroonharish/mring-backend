@@ -731,8 +731,7 @@ exports.deleteUpload = async (req, res) => {
 
 exports.getAttendance = async (req, res) => {
   try {
-    const { agentId } = req.params;
-    const { startDate, endDate } = req.query;
+    const {agentId, startDate, endDate } = req.query;
 
     let filter = { agentId };
 
