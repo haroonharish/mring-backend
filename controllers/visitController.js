@@ -32,10 +32,6 @@ exports.createVisit = async (req, res) => {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
 
-    const customerStatusNormalized = customerStatus
-      .toUpperCase()
-      .replace(" ", "_");
-
     const updateFromNormalized = updateFrom.toUpperCase();
 
     const customer = await Customer.findOne({ customId });
@@ -52,7 +48,7 @@ exports.createVisit = async (req, res) => {
       agentId,
       customId: customer.customId,
       visitDate,
-      customerStatus: customerStatusNormalized,
+      customerStatus,
       remark,
       updateFrom: updateFromNormalized,
       actionDoneDate,
@@ -69,7 +65,7 @@ exports.createVisit = async (req, res) => {
       { customId: customer.customId },
       { status: "VISITED",
          visitDate,
-    customerStatus: customerStatusNormalized,
+    customerStatus,
     updateFrom: updateFromNormalized,
     proofFile
        }
