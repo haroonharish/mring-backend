@@ -22,7 +22,7 @@ app.use("/auth", authRoutes);
 app.use("/agent/customers", customerRoutes);
 app.use("/agent/visit", visitRoutes);
 app.use("/admin", adminRoutes);
-require("./cron/autoCheckout");
+
 // Health check (important for keep-alive)
 app.get("/health", (req, res) => {
   console.log("🔥 Health endpoint hit:", new Date().toISOString());
