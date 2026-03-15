@@ -9,6 +9,7 @@ const visitSchema = new mongoose.Schema({
   dispoLocationstatus: { type: String, enum: ["Own residence at Good Residential area", "Own residence at other area", "Rented residence at Good residential area", "Rented residence at other area"] }, 
   visitDate: { type: Date, required: true },
   actionDoneDate: { type: Date, required: true },
+  revisitDate: {type: Date},
   customerStatus: { type: String, enum: ["CB/Re visit","CLPD","PTP","CB","LM","DL","OS","RTP","ISSUE","NC","NR","WN","NC"], required: true },
   remark: { type: String },
   updateFrom: { type: String, enum: ["FIELD", "WHATSAPP", "CALL"], required: true },

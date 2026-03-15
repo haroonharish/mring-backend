@@ -6,7 +6,7 @@ const Attendance = require("../models/Attendance");
 
 exports.createVisit = async (req, res) => {
   try {
-    const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude, actionDoneDate, dispoLocationstatus } = req.body;
+    const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude, actionDoneDate, revisitDate, dispoLocationstatus } = req.body;
     const agentId = req.user.userId;
 
     const today = new Date().toISOString().split("T")[0];
@@ -32,6 +32,11 @@ exports.createVisit = async (req, res) => {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
 
+    if (customerStatus === "CB/Re visit" && !revisitDate) {
+  return res.status(400).json({
+    message: "Revisit date is required for CB/Re visit status"
+  });
+}
     const updateFromNormalized = updateFrom.toUpperCase();
 
     const customer = await Customer.findOne({ customId });
@@ -51,6 +56,7 @@ exports.createVisit = async (req, res) => {
       customerStatus,
       remark,
       updateFrom: updateFromNormalized,
+      revisitDate,
       actionDoneDate,
       time,
       dispoLocationstatus,
@@ -61,14 +67,19 @@ exports.createVisit = async (req, res) => {
 
     });
 
+    let customerUpdate = {
+  status: "VISITED",
+  visitDate,
+  customerStatus,
+  updateFrom: updateFromNormalized,
+    proofFile
+};
+  if (customerStatus === "CB/Re visit") {
+  customerUpdate.status = "PENDING";
+}
     await Customer.findOneAndUpdate(
       { customId: customer.customId },
-      { status: "VISITED",
-         visitDate,
-    customerStatus,
-    updateFrom: updateFromNormalized,
-    proofFile
-       }
+      customerUpdate
     );
 
     res.status(201).json({
