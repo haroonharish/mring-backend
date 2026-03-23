@@ -76,6 +76,9 @@ exports.createVisit = async (req, res) => {
 };
   if (customerStatus === "CB/Re visit") {
   customerUpdate.status = "REVISIT";
+  customerUpdate.nextVisitDate = revisitDate;
+} else {
+  customerUpdate.nextVisitDate = null;
 }
     await Customer.findOneAndUpdate(
       { customId: customer.customId },

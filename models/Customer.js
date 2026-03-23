@@ -21,6 +21,10 @@ coBorrowerPhones: {
   type: [String],
   default: []
 },
+nextVisitDate: {
+  type: Date,
+  default: null
+},
 isActive: { type: Boolean, default: true },
   customerName: { type: String, required: true },
   address: String,
