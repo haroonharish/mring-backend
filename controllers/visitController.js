@@ -75,7 +75,7 @@ exports.createVisit = async (req, res) => {
     proofFile
 };
   if (customerStatus === "CB/Re visit") {
-  customerUpdate.status = "PENDING";
+  customerUpdate.status = "REVISIT";
 }
     await Customer.findOneAndUpdate(
       { customId: customer.customId },
