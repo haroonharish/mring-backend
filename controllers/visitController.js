@@ -10,7 +10,7 @@ exports.createVisit = async (req, res) => {
     const agentId = req.user.userId;
 
     const today = new Date().toISOString().split("T")[0];
-
+    const time = new Date();
     const attendance = await Attendance.findOne({
       agentId,
       date: today
