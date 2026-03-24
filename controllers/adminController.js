@@ -752,3 +752,70 @@ exports.getAttendance = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.getAgentWeeklyLocations = async (req, res) => {
+  try {
+    const { agentId, startDate, endDate } = req.query;
+
+    if (!agentId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "agentId, startDate and endDate are required"
+      });
+    }
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const visits = await Visit.aggregate([
+      {
+        $match: {
+          agentId: new mongoose.Types.ObjectId(agentId),
+          visitDate: { $gte: start, $lte: end }
+        }
+      },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customId",
+          foreignField: "customId",
+          as: "customer"
+        }
+      },
+      {
+        $unwind: {
+          path: "$customer",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $sort: { visitDate: 1 }
+      },
+      {
+        $project: {
+          _id: 0,
+          customId: 1,
+          visitDate: 1,
+          customerStatus: 1,
+          latitude: { $arrayElemAt: ["$location.coordinates", 1] },
+          longitude: { $arrayElemAt: ["$location.coordinates", 0] },
+          customerName: "$customer.customerName",
+          loanId: "$customer.loanId"
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      count: visits.length,
+      locations: visits
+    });
+
+  } catch (err) {
+    console.error("WEEKLY LOCATION ERROR:", err);
+    res.status(500).json({
+      message: "Failed to fetch locations",
+      error: err.message
+    });
+  }
+};
