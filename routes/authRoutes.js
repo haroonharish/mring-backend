@@ -13,4 +13,7 @@ router.post("/admin/agent/restore",authMiddleware(["ADMIN"]), authController.res
 router.post("/checkin", authMiddleware(["AGENT"]), authController.checkIn);
 router.post("/checkout", authMiddleware(["AGENT"]), authController.checkOut);
 router.get("/attendance/status", authMiddleware(["AGENT"]), authController.getAttendanceStatus);
+router.get("/notifications", authMiddleware(["AGENT"]), authController.getAgentNotifications);
+router.put("/notifications/:id", authMiddleware(["AGENT"]), authController.markNotificationRead);
+
 module.exports = router;

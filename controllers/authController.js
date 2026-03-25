@@ -288,3 +288,33 @@ exports.getAttendanceStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.getAgentNotifications = async (req, res) => {
+  try {
+    const agentId = req.user.userId;
+
+    const notifications = await CustomerEvent.find({ agentId })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      count: notifications.length,
+      notifications
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.markNotificationRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await CustomerEvent.findByIdAndUpdate(id, { isRead: true });
+
+    res.json({ message: "Marked as read" });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

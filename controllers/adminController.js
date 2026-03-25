@@ -8,6 +8,7 @@ const Visit = require("../models/Visit");
 const Counter = require("../models/Counter");
 const Attendance = require("../models/Attendance");
 const mongoose = require("mongoose");
+const CustomerEvent = require("../models/CustomerEvent");
 
 const generateCustomerId = async () => {
   const counter = await Counter.findOneAndUpdate(
@@ -820,3 +821,113 @@ exports.getAgentWeeklyLocations = async (req, res) => {
     });
   }
 };
+
+exports.sendCustomerMessage = async (req, res) => {
+  try {
+    const { loanId, message, type } = req.body;
+
+    if (!loanId || !message) {
+      return res.status(400).json({
+        message: "loanId and message are required"
+      });
+    }
+
+    const customer = await Customer.findOne({ loanId });
+
+    if (!customer) {
+      return res.status(404).json({
+        message: "Customer not found"
+      });
+    }
+
+    const event = await CustomerEvent.create({
+      customerId: customer._id,
+      loanId: customer.loanId,
+      customId: customer.customId,
+      agentId: customer.assignedAgentId,
+      message,
+      type,
+      createdBy: req.user.userId,
+      source: "MANUAL"
+    });
+
+    res.status(201).json({
+      message: "Message sent successfully",
+      event
+    });
+
+  } catch (err) {
+    console.error("SEND MESSAGE ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.uploadCustomerMessages = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const response = await axios.get(req.file.path, {
+      responseType: "arraybuffer"
+    });
+
+    const workbook = XLSX.read(response.data, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    let success = 0;
+    let failed = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber = i + 2;
+
+      try {
+        const loanId = row["LOAN_ID"]?.toString().trim();
+        const message = row["MESSAGE"]?.trim();
+        const type = row["TYPE"]?.toUpperCase() || "OTHER";
+
+        if (!loanId || !message) {
+          failed.push({ rowNumber, message: "Missing LOAN_ID or MESSAGE" });
+          continue;
+        }
+
+        const customer = await Customer.findOne({ loanId });
+
+        if (!customer) {
+          failed.push({ rowNumber, message: "Customer not found" });
+          continue;
+        }
+
+        await CustomerEvent.create({
+          customerId: customer._id,
+          loanId: customer.loanId,
+          customId: customer.customId,
+          agentId: customer.assignedAgentId,
+          message,
+          type,
+          createdBy: req.user.userId,
+          source: "EXCEL"
+        });
+
+        success++;
+
+      } catch (err) {
+        failed.push({ rowNumber, message: err.message });
+      }
+    }
+
+    res.json({
+      message: "Excel processed",
+      success,
+      failedCount: failed.length,
+      errors: failed
+    });
+
+  } catch (err) {
+    console.error("EXCEL MESSAGE ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
