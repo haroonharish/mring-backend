@@ -7,6 +7,7 @@ const ExcelJS = require("exceljs");
 const Visit = require("../models/Visit");
 const Counter = require("../models/Counter");
 const Attendance = require("../models/Attendance");
+const mongoose = require("mongoose");
 
 const generateCustomerId = async () => {
   const counter = await Counter.findOneAndUpdate(
