@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Attendance = require("../models/Attendance");
+const CustomerEvent = require("../models/CustomerEvent");
 
 const generateUserId = async (role) => {
   const prefix = role === "ADMIN" ? "AD" : "AG";
