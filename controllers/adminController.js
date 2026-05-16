@@ -105,7 +105,9 @@ for (let i = 0; i < rows.length; i++) {
     const lastPaidTotal = Number(row["Paid Total"]) || 0;
     const lastPaidDate = parseExcelDate(row["Last Pd Dt"]);
     const npaDate = parseExcelDate(row["NPA Date"]);
-    const address = row["ADDRESS"]?.trim();
+const permanentAddress = row["PERM_ADDRESS"]?.trim();
+const coBorrowerAddress = row["CO_BOR_ADDR"]?.trim();
+const temporaryAddress = row["TEMP_ADDR"]?.trim();
     const assignedAgent = row["ASSIGNED_AGENT"]?.trim();
     const collectPhones = (row, fields) => {
     return fields
@@ -183,7 +185,9 @@ if (!agent) {
       existingCustomer.coBorrowerPhones = coBorrowerPhones;
       existingCustomer.assignedAgentId = agent._id;
       existingCustomer.uploadBatchId = uploadHistory._id;
-      existingCustomer.address = address;
+existingCustomer.permanentAddress = permanentAddress;
+existingCustomer.coBorrowerAddress = coBorrowerAddress;
+existingCustomer.temporaryAddress = temporaryAddress;
       existingCustomer.status = "PENDING";
       existingCustomer.visitDate = null;
       existingCustomer.customerStatus = null;
@@ -201,7 +205,9 @@ if (!agent) {
       customId,
       loanId,
       customerName,
-      address,
+      permanentAddress,
+coBorrowerAddress,
+temporaryAddress,
       accountNo,
       branch,
       scheme,
@@ -504,7 +510,9 @@ let latestLocation = null;
           lastDPD: 1,
           lastArrears: 1,
           phone: 1,
-          address: 1,
+permanentAddress: 1,
+coBorrowerAddress: 1,
+temporaryAddress: 1,
           coBorrowerPhones: 1,
           isNPA: 1,
           status: 1,

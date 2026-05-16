@@ -104,7 +104,9 @@ exports.getVisitedCustomers = async (req, res) => {
         loanId: c?.loanId,
         customerName: c?.customerName,
         phone: c?.phone,
-        address: c?.address,
+permanentAddress: c?.permanentAddress,
+coBorrowerAddress: c?.coBorrowerAddress,
+temporaryAddress: c?.temporaryAddress,
         branch: c?.branch,
         accountNo: c?.accountNo,
         bankName: c?.bankName,
@@ -164,8 +166,9 @@ exports.getCustomerVisitHistory = async (req, res) => {
         customId: customer.customId,
         customerName: customer.customerName,
         phone: customer.phone,
-        address: customer.address
-      },
+permanentAddress: customer.permanentAddress,
+coBorrowerAddress: customer.coBorrowerAddress,
+temporaryAddress: customer.temporaryAddress,      },
       visits
     });
 
