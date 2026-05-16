@@ -6,7 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const visitRoutes = require("./routes/visitRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-
+const reviewRoutes = require("./routes/reviewRoutes");
 const cron = require("node-cron");
 const axios = require("axios");
 
@@ -22,7 +22,7 @@ app.use("/auth", authRoutes);
 app.use("/agent/customers", customerRoutes);
 app.use("/agent/visit", visitRoutes);
 app.use("/admin", adminRoutes);
-
+app.use("/reviews", reviewRoutes);
 // Health check (important for keep-alive)
 app.get("/health", (req, res) => {
   console.log("🔥 Health endpoint hit:", new Date().toISOString());
