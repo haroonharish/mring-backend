@@ -15,5 +15,6 @@ router.post("/checkout", authMiddleware(["AGENT"]), authController.checkOut);
 router.get("/attendance/status", authMiddleware(["AGENT"]), authController.getAttendanceStatus);
 router.get("/notifications", authMiddleware(["AGENT"]), authController.getAgentNotifications);
 router.put("/notifications/:id", authMiddleware(["AGENT"]), authController.markNotificationRead);
-
+router.post("/admin/executive/register", authMiddleware(["ADMIN"]), authController.registerExecutive);
+router.get("/admin/executives", authMiddleware(["ADMIN"]), authController.getExecutives);
 module.exports = router;

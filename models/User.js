@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["AGENT", "ADMIN"],
+    enum: ["AGENT", "ADMIN", "EXECUTIVE"],
     default: "AGENT"
   },
   fullName: {
@@ -33,7 +33,12 @@ const userSchema = new mongoose.Schema({
   mustChangePassword: {
     type: Boolean,
     default: false
-  }
+  },
+  executiveId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null
+}
 }, { timestamps: true
 });
 

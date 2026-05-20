@@ -12,10 +12,10 @@ const generateUserId = async (role) => {
 };
 
 exports.register = async (req, res) => {
-  const { username, password, confirmPassword, fullName, phoneNumber } = req.body;
+  const { username, password, confirmPassword, fullName, phoneNumber, executiveCustomId  } = req.body;
 
   // Validation
-  if (!username || !password || !confirmPassword || !fullName || !phoneNumber) {
+  if (!username || !password || !confirmPassword || !fullName || !phoneNumber || !executiveCustomId) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -29,6 +29,11 @@ exports.register = async (req, res) => {
     return res.status(400).json({ message: "Username already exists" });
   }
 
+  const executive = await User.findOne({ customId: executiveCustomId, role: "EXECUTIVE", isActive: true });
+if (!executive) {
+  return res.status(404).json({ message: "Executive not found or inactive" });
+}
+
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -41,11 +46,73 @@ exports.register = async (req, res) => {
     password: hashedPassword,
     role: "AGENT",
     fullName,
-    phoneNumber
+    phoneNumber,
+    executiveId: executive._id
   });
 
   await user.save();
   res.status(201).json({ message: "Agent registered successfully" });
+};
+
+exports.registerExecutive = async (req, res) => {
+  try {
+    const { username, password, confirmPassword, fullName, phoneNumber } = req.body;
+
+    if (!username || !password || !confirmPassword || !fullName || !phoneNumber) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    const existing = await User.findOne({ username });
+    if (existing) {
+      return res.status(400).json({ message: "Username already taken" });
+    }
+
+    const counter = await Counter.findOneAndUpdate(
+      { name: "executive" },
+      { $inc: { sequence: 1 } },
+      { new: true, upsert: true }
+    );
+    const customId = `EX${String(counter.sequence).padStart(2, "0")}`;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const executive = await User.create({
+      customId,
+      username,
+      password: hashedPassword,
+      role: "EXECUTIVE",
+      fullName,
+      phoneNumber,
+      mustChangePassword: false
+    });
+
+    res.status(201).json({
+      message: "Executive registered successfully",
+      executive: {
+        customId: executive.customId,
+        username: executive.username,
+        fullName: executive.fullName,
+        phoneNumber: executive.phoneNumber
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getExecutives = async (req, res) => {
+  try {
+    const executives = await User.find({ role: "EXECUTIVE", isActive: true })
+      .select("customId fullName phoneNumber username");
+
+    res.json({ executives });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.login = async (req, res) => {
@@ -84,7 +151,7 @@ exports.login = async (req, res) => {
 exports.resetAgentPassword = async (req, res) => {
   const { agentId } = req.body;
 
-  const user = await User.findOne({ customId: agentId, role: "AGENT", isActive: true });
+  const user = await User.findOne({ customId: agentId, role: { $in: ["AGENT", "EXECUTIVE"] }, isActive: true });
   if (!user) {
     return res.status(404).json({ message: "Agent not found or inactive" });
   }
@@ -130,8 +197,8 @@ if (!agentId) {
 
     const agent = await User.findOne({
       customId: agentId,
-      role: "AGENT"
-    });
+      role: { $in: ["AGENT", "EXECUTIVE"] }   
+     });
 
     if (!agent) {
       return res.status(404).json({ message: "Agent not found" });
@@ -156,7 +223,7 @@ exports.restoreAgent = async (req, res) => {
 
   const agent = await User.findOne({
     customId: agentId,
-    role: "AGENT"
+    role: { $in: ["AGENT", "EXECUTIVE"] }
   });
 
   if (!agent) {

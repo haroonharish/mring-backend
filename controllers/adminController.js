@@ -351,7 +351,6 @@ exports.getAgentsSummary = async (req, res) => {
   try {
     const agents = await User.aggregate([
       { $match: { role: "AGENT" } },
-
       {
         $lookup: {
           from: "customers",
@@ -406,7 +405,20 @@ exports.getAgentsSummary = async (req, res) => {
           }
         }
       },
-
+      {
+        $lookup: {
+          from: "users",
+          localField: "executiveId",
+          foreignField: "_id",
+          as: "executiveInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$executiveInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
       {
         $project: {
           _id: 1,
@@ -427,9 +439,19 @@ exports.getAgentsSummary = async (req, res) => {
           },
           null
         ]
-      }
+      },
+      executive: {
+            $cond: [
+              { $ifNull: ["$executiveInfo", false] },
+              {
+                customId: "$executiveInfo.customId",
+                fullName: "$executiveInfo.fullName"
+              },
+              null
+            ]
         }
       }
+    }
     ]);
 
     res.status(200).json({ agents });
