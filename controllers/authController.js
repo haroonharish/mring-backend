@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Attendance = require("../models/Attendance");
 const CustomerEvent = require("../models/CustomerEvent");
+const Counter = require("../models/Counter");
 
 const generateUserId = async (role) => {
   const prefix = role === "ADMIN" ? "AD" : "AG";
