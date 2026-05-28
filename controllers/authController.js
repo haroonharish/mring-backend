@@ -20,6 +20,14 @@ exports.register = async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
   }
 
+  if (req.user.role === "AGENT") {
+  return res.status(403).json({ message: "Agents cannot register other agents" });
+}
+
+if (req.user.role !== "EXECUTIVE" && !executiveCustomId) {
+  return res.status(400).json({ message: "executiveCustomId is required" });
+}
+
   if (password !== confirmPassword) {
     return res.status(400).json({ message: "Passwords do not match" });
   }
@@ -30,9 +38,14 @@ exports.register = async (req, res) => {
     return res.status(400).json({ message: "Username already exists" });
   }
 
-  const executive = await User.findOne({ customId: executiveCustomId, role: "EXECUTIVE", isActive: true });
-if (!executive) {
-  return res.status(404).json({ message: "Executive not found or inactive" });
+let executive;
+if (req.user.role === "EXECUTIVE") {
+  executive = await User.findById(req.user.userId);
+} else {
+  executive = await User.findOne({ customId: executiveCustomId, role: "EXECUTIVE", isActive: true });
+  if (!executive) {
+    return res.status(404).json({ message: "Executive not found or inactive" });
+  }
 }
 
   // Hash password
