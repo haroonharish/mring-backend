@@ -10,6 +10,15 @@ const Attendance = require("../models/Attendance");
 const mongoose = require("mongoose");
 const CustomerEvent = require("../models/CustomerEvent");
 
+const getAgentScope = async (user) => {
+  if (user.role === "ADMIN") return {};
+  const agents = await User.find(
+    { role: "AGENT", executiveId: new mongoose.Types.ObjectId(user.userId) },
+    { _id: 1 }
+  );
+  return { $in: agents.map((a) => a._id) };
+};
+
 const generateCustomerId = async () => {
   const counter = await Counter.findOneAndUpdate(
     { name: "customer" },
@@ -299,23 +308,48 @@ exports.getCustomerReports = async (req, res) => {
 
     const query = {};
     if (status) query.status = status.toUpperCase();
-    
+
     if (batchLabel) {
-  const batch = await ExcelUpload.findOne({ label: batchLabel });
+      const batch = await ExcelUpload.findOne({ label: batchLabel });
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      query.uploadBatchId = batch._id;
+    }
 
-  if (!batch) {
-    return res.status(404).json({ message: "Batch not found" });
-  }
+    // Executive scope — restrict to their agents only
+    if (req.user.role === "EXECUTIVE") {
+      const scopedAgents = await User.find(
+        { role: "AGENT", executiveId: new mongoose.Types.ObjectId(req.user.userId) },
+        { _id: 1 }
+      );
+      const scopedIds = scopedAgents.map((a) => a._id);
 
-  query.uploadBatchId = batch._id;
-}
+      if (agentUsername) {
+        const agent = await User.findOne({
+          username: agentUsername.trim().toLowerCase(),
+          role: "AGENT"
+        });
+        if (!agent) return res.status(404).json({ message: "Agent not found" });
 
-
-    if (agentUsername) {
-      const agent = await User.findOne({ username: agentUsername.trim().toLowerCase(),
-  role: "AGENT" });
-      if (!agent) return res.status(404).json({ message: "Agent not found" });
-      query.assignedAgentId = agent._id;
+        // Make sure this agent belongs to the executive
+        if (!scopedIds.some((id) => id.toString() === agent._id.toString())) {
+          return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
+        }
+        query.assignedAgentId = agent._id;
+      } else {
+        query.assignedAgentId = { $in: scopedIds };
+      }
+    } else {
+      // ADMIN — no scope restriction
+      if (agentUsername) {
+        const agent = await User.findOne({
+          username: agentUsername.trim().toLowerCase(),
+          role: "AGENT"
+        });
+        if (!agent) return res.status(404).json({ message: "Agent not found" });
+        query.assignedAgentId = agent._id;
+      }
     }
 
     const total = await Customer.countDocuments(query);
@@ -326,19 +360,21 @@ exports.getCustomerReports = async (req, res) => {
       .limit(limit)
       .sort({ createdAt: -1 });
 
-    const result = customers.map(c => ({
+    const result = customers.map((c) => ({
       _id: c._id,
       customerName: c.customerName,
-      address: c.address,
+      permanentAddress: c.permanentAddress,
+      coBorrowerAddress: c.coBorrowerAddress,
+      temporaryAddress: c.temporaryAddress,
       phone: c.phone,
       loanAmount: c.loanAmount,
-      assignedAgent: c.assignedAgentId.username,
+      assignedAgent: c.assignedAgentId?.username,
       status: c.status,
       visitDate: c.visitDate,
       customerStatus: c.customerStatus,
       updateFrom: c.updateFrom,
       proofFileUrl: c.proofFile || []
-  }));
+    }));
 
     res.json({ count: result.length, page, limit, total, customers: result });
 
@@ -349,8 +385,12 @@ exports.getCustomerReports = async (req, res) => {
 
 exports.getAgentsSummary = async (req, res) => {
   try {
+    const matchStage = req.user.role === "EXECUTIVE"
+      ? { role: "AGENT", executiveId: new mongoose.Types.ObjectId(req.user.userId) }
+      : { role: "AGENT" };
+
     const agents = await User.aggregate([
-      { $match: { role: "AGENT" } },
+      { $match: matchStage },
       {
         $lookup: {
           from: "customers",
@@ -359,17 +399,12 @@ exports.getAgentsSummary = async (req, res) => {
           as: "customers"
         }
       },
-
       {
         $lookup: {
           from: "visits",
           let: { agentId: "$_id" },
           pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ["$agentId", "$$agentId"] }
-              }
-            },
+            { $match: { $expr: { $eq: ["$agentId", "$$agentId"] } } },
             { $sort: { actionDoneDate: -1 } },
             { $limit: 1 },
             {
@@ -383,14 +418,9 @@ exports.getAgentsSummary = async (req, res) => {
           as: "latestVisit"
         }
       },
-
       {
-        $unwind: {
-          path: "$latestVisit",
-          preserveNullAndEmptyArrays: true
-        }
+        $unwind: { path: "$latestVisit", preserveNullAndEmptyArrays: true }
       },
-
       {
         $addFields: {
           totalCustomers: { $size: "$customers" },
@@ -414,10 +444,7 @@ exports.getAgentsSummary = async (req, res) => {
         }
       },
       {
-        $unwind: {
-          path: "$executiveInfo",
-          preserveNullAndEmptyArrays: true
-        }
+        $unwind: { path: "$executiveInfo", preserveNullAndEmptyArrays: true }
       },
       {
         $project: {
@@ -430,17 +457,17 @@ exports.getAgentsSummary = async (req, res) => {
           totalCustomers: 1,
           completedCustomers: 1,
           latestLocation: {
-             $cond: [
-        { $ifNull: ["$latestVisit", false] },
-        {
-            latitude: "$latestVisit.latitude",
-            longitude: "$latestVisit.longitude",
-            actionDoneDate: "$latestVisit.actionDoneDate"
+            $cond: [
+              { $ifNull: ["$latestVisit", false] },
+              {
+                latitude: "$latestVisit.latitude",
+                longitude: "$latestVisit.longitude",
+                actionDoneDate: "$latestVisit.actionDoneDate"
+              },
+              null
+            ]
           },
-          null
-        ]
-      },
-      executive: {
+          executive: {
             $cond: [
               { $ifNull: ["$executiveInfo", false] },
               {
@@ -449,9 +476,9 @@ exports.getAgentsSummary = async (req, res) => {
               },
               null
             ]
+          }
         }
       }
-    }
     ]);
 
     res.status(200).json({ agents });
@@ -466,17 +493,23 @@ exports.getAgentCustomers = async (req, res) => {
   try {
     const { agentCustomId } = req.params;
 
-    // 1️⃣ Find the agent
     const agent = await User.findOne({ customId: agentCustomId, role: "AGENT" });
-if (!agent) return res.status(404).json({ message: "Agent not found" });
-const latestVisit = await Visit.findOne(
-  { agentId: agent._id },
-  {},
-  { sort: { visitDate: -1 } }
-);
+    if (!agent) return res.status(404).json({ message: "Agent not found" });
 
-let latestLocation = null;
+    // Executive can only access their own agents
+    if (req.user.role === "EXECUTIVE") {
+      if (!agent.executiveId || agent.executiveId.toString() !== req.user.userId) {
+        return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
+      }
+    }
 
+    const latestVisit = await Visit.findOne(
+      { agentId: agent._id },
+      {},
+      { sort: { visitDate: -1 } }
+    );
+
+    let latestLocation = null;
     if (
       latestVisit &&
       latestVisit.location &&
@@ -490,30 +523,28 @@ let latestLocation = null;
       };
     }
 
-    // 2️⃣ Aggregate customers with latest visit
     const customers = await Customer.aggregate([
       { $match: { assignedAgentId: agent._id } },
-
-      // Lookup all visits for the customer
-      { $lookup: {
+      {
+        $lookup: {
           from: "visits",
           localField: "customId",
           foreignField: "customId",
           as: "visits"
         }
       },
-
-      // Add last visit (latest remark)
-      { $addFields: {
-          lastVisit: { $arrayElemAt: [
-            { $sortArray: { input: "$visits", sortBy: { visitDate: -1 } } }, 
-            0 
-          ] }
-        } 
+      {
+        $addFields: {
+          lastVisit: {
+            $arrayElemAt: [
+              { $sortArray: { input: "$visits", sortBy: { visitDate: -1 } } },
+              0
+            ]
+          }
+        }
       },
-
-      // Project only required fields for admin
-      { $project: {
+      {
+        $project: {
           _id: 0,
           customerId: "$customId",
           loanId: 1,
@@ -532,9 +563,9 @@ let latestLocation = null;
           lastDPD: 1,
           lastArrears: 1,
           phone: 1,
-permanentAddress: 1,
-coBorrowerAddress: 1,
-temporaryAddress: 1,
+          permanentAddress: 1,
+          coBorrowerAddress: 1,
+          temporaryAddress: 1,
           coBorrowerPhones: 1,
           isNPA: 1,
           status: 1,
@@ -542,7 +573,7 @@ temporaryAddress: 1,
           proofFile: "$lastVisit.proofFile",
           visitDate: "$lastVisit.visitDate",
           latitude: { $arrayElemAt: ["$lastVisit.location.coordinates", 1] },
-          longitude: { $arrayElemAt: ["$lastVisit.location.coordinates", 0] },
+          longitude: { $arrayElemAt: ["$lastVisit.location.coordinates", 0] }
         }
       }
     ]);
@@ -764,39 +795,73 @@ exports.deleteUpload = async (req, res) => {
 
 exports.getAttendance = async (req, res) => {
   try {
-    const {agentId, startDate, endDate } = req.query;
-
-    let filter = { agentId };
+    const { agentId, startDate, endDate } = req.query;
+    let filter = {};
 
     if (startDate || endDate) {
-  filter.date = {};
-  if (startDate) filter.date.$gte = startDate;
-  if (endDate) filter.date.$lte = endDate;
-}
+      filter.date = {};
+      if (startDate) filter.date.$gte = startDate;
+      if (endDate) filter.date.$lte = endDate;
+    }
+
+    if (req.user.role === "EXECUTIVE") {
+      // Get all agents under this executive
+      const scopedAgents = await User.find(
+        { role: "AGENT", executiveId: new mongoose.Types.ObjectId(req.user.userId) },
+        { _id: 1 }
+      );
+      const scopedIds = scopedAgents.map((a) => a._id);
+
+      if (agentId) {
+        // Verify the requested agent belongs to this executive
+        const requestedAgent = await User.findOne({ customId: agentId });
+        if (!requestedAgent || !scopedIds.some((id) => id.toString() === requestedAgent._id.toString())) {
+          return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
+        }
+        filter.agentId = requestedAgent._id;
+      } else {
+        filter.agentId = { $in: scopedIds };
+      }
+    } else {
+      // ADMIN — no restriction
+      if (agentId) {
+        const requestedAgent = await User.findOne({ customId: agentId });
+        if (!requestedAgent) return res.status(404).json({ message: "Agent not found" });
+        filter.agentId = requestedAgent._id;
+      }
+    }
 
     const records = await Attendance.find(filter)
-      .populate("agentId", "username")
+      .populate("agentId", "username fullName customId")
       .sort({ date: -1 });
 
     res.json(records);
-
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-
 exports.getAgentWeeklyLocations = async (req, res) => {
   try {
     const { agentId, startDate, endDate } = req.query;
-
     if (!agentId || !startDate || !endDate) {
       return res.status(400).json({
         message: "agentId, startDate and endDate are required"
       });
     }
+
+    // Executive scope check
+    if (req.user.role === "EXECUTIVE") {
+      const requestedAgent = await User.findOne({ customId: agentId, role: "AGENT" });
+      if (!requestedAgent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      if (!requestedAgent.executiveId || requestedAgent.executiveId.toString() !== req.user.userId) {
+        return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
+      }
+    }
+
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
-
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
@@ -821,9 +886,7 @@ exports.getAgentWeeklyLocations = async (req, res) => {
           preserveNullAndEmptyArrays: true
         }
       },
-      {
-        $sort: { visitDate: 1 }
-      },
+      { $sort: { visitDate: 1 } },
       {
         $project: {
           _id: 0,
@@ -842,7 +905,6 @@ exports.getAgentWeeklyLocations = async (req, res) => {
       count: visits.length,
       locations: visits
     });
-
   } catch (err) {
     console.error("WEEKLY LOCATION ERROR:", err);
     res.status(500).json({
@@ -855,7 +917,6 @@ exports.getAgentWeeklyLocations = async (req, res) => {
 exports.sendCustomerMessage = async (req, res) => {
   try {
     const { loanId, message, type } = req.body;
-
     if (!loanId || !message) {
       return res.status(400).json({
         message: "loanId and message are required"
@@ -863,11 +924,22 @@ exports.sendCustomerMessage = async (req, res) => {
     }
 
     const customer = await Customer.findOne({ loanId });
-
     if (!customer) {
-      return res.status(404).json({
-        message: "Customer not found"
-      });
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    // Executive scope check
+    if (req.user.role === "EXECUTIVE") {
+      const assignedAgent = await User.findById(customer.assignedAgentId);
+      if (
+        !assignedAgent ||
+        !assignedAgent.executiveId ||
+        assignedAgent.executiveId.toString() !== req.user.userId
+      ) {
+        return res.status(403).json({
+          message: "Access denied. This customer's agent is not under your supervision."
+        });
+      }
     }
 
     const event = await CustomerEvent.create({
@@ -885,7 +957,6 @@ exports.sendCustomerMessage = async (req, res) => {
       message: "Message sent successfully",
       event
     });
-
   } catch (err) {
     console.error("SEND MESSAGE ERROR:", err);
     res.status(500).json({ message: err.message });
@@ -901,7 +972,6 @@ exports.uploadCustomerMessages = async (req, res) => {
     const response = await axios.get(req.file.path, {
       responseType: "arraybuffer"
     });
-
     const workbook = XLSX.read(response.data, { type: "buffer" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
@@ -924,10 +994,22 @@ exports.uploadCustomerMessages = async (req, res) => {
         }
 
         const customer = await Customer.findOne({ loanId });
-
         if (!customer) {
           failed.push({ rowNumber, message: "Customer not found" });
           continue;
+        }
+
+        // Executive scope check
+        if (req.user.role === "EXECUTIVE") {
+          const assignedAgent = await User.findById(customer.assignedAgentId);
+          if (
+            !assignedAgent ||
+            !assignedAgent.executiveId ||
+            assignedAgent.executiveId.toString() !== req.user.userId
+          ) {
+            failed.push({ rowNumber, message: "Agent not under your supervision" });
+            continue;
+          }
         }
 
         await CustomerEvent.create({
@@ -942,7 +1024,6 @@ exports.uploadCustomerMessages = async (req, res) => {
         });
 
         success++;
-
       } catch (err) {
         failed.push({ rowNumber, message: err.message });
       }
@@ -954,7 +1035,6 @@ exports.uploadCustomerMessages = async (req, res) => {
       failedCount: failed.length,
       errors: failed
     });
-
   } catch (err) {
     console.error("EXCEL MESSAGE ERROR:", err);
     res.status(500).json({ message: err.message });
