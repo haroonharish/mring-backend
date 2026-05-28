@@ -129,6 +129,33 @@ exports.getExecutives = async (req, res) => {
   }
 };
 
+exports.getMyAgents = async (req, res) => {
+  try {
+    const agents = await User.find(
+      { role: "AGENT", executiveId: new mongoose.Types.ObjectId(req.user.userId), isActive: true },
+      "customId fullName username phoneNumber isActive"
+    );
+    res.json({ agents });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getAgentsList = async (req, res) => {
+  try {
+    const filter = { role: "AGENT", isActive: true };
+
+    if (req.user.role === "EXECUTIVE") {
+      filter.executiveId = new mongoose.Types.ObjectId(req.user.userId);
+    }
+
+    const agents = await User.find(filter, "customId fullName username phoneNumber isActive executiveId");
+    res.json({ agents });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.login = async (req, res) => {
   const { username, password } = req.body;
 

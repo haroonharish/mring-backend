@@ -17,4 +17,6 @@ router.get("/notifications", authMiddleware(["AGENT"]), authController.getAgentN
 router.put("/notifications/:id", authMiddleware(["AGENT"]), authController.markNotificationRead);
 router.post("/admin/executive/register", authMiddleware(["ADMIN"]), authController.registerExecutive);
 router.get("/admin/executives", authMiddleware(["ADMIN"]), authController.getExecutives);
+router.get("/executive/my-agents", authMiddleware(["EXECUTIVE"]), authController.getMyAgents);
+router.get("/admin/agents", authMiddleware(["ADMIN", "EXECUTIVE"]), authController.getAgentsList);
 module.exports = router;
