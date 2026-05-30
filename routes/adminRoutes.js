@@ -2,7 +2,7 @@ const router = require("express").Router();
 const upload = require("../middleware/upload");
 const auth = require("../middleware/authMiddleware");
 const { uploadCustomers, getCustomerReports, getAgentsSummary, sendCustomerMessage,
-  uploadCustomerMessages, getAgentWeeklyLocations, getAgentCustomers, getExcelUploadHistory, deleteUpload, generateBatchReport,getAttendance } = require("../controllers/adminController");
+  uploadCustomerMessages, getAgentWeeklyLocations, getAgentCustomers, getExcelUploadHistory, deleteUpload, generateBatchReport,getAttendance, getMessageHistory } = require("../controllers/adminController");
 
 router.post("/upload-customers", auth(["ADMIN", "EXECUTIVE"]), upload.single("file"), uploadCustomers);
 router.get("/customer-reports", auth(["ADMIN", "EXECUTIVE"]), getCustomerReports);
@@ -15,4 +15,5 @@ router.get("/get-attendance", auth(["ADMIN", "EXECUTIVE"]), getAttendance);
 router.get("/getWeeklyLocations", auth(["ADMIN", "EXECUTIVE"]), getAgentWeeklyLocations);
 router.post("/send-message",auth(["ADMIN", "EXECUTIVE"]), sendCustomerMessage);
 router.post("/upload-messages", auth(["ADMIN", "EXECUTIVE"]), uploadCustomerMessages);
+router.get("/message-history", auth(["ADMIN", "EXECUTIVE"]), getMessageHistory);
 module.exports = router;

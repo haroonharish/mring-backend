@@ -1060,3 +1060,70 @@ exports.uploadCustomerMessages = async (req, res) => {
   }
 };
 
+
+exports.getMessageHistory = async (req, res) => {
+  try {
+    let { loanId, agentId, page = 1, limit = 20 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const query = {};
+
+    if (loanId) query.loanId = loanId;
+
+    if (agentId) {
+      const agent = await User.findOne({
+        $or: [
+          { _id: mongoose.isValidObjectId(agentId) ? new mongoose.Types.ObjectId(agentId) : null },
+          { customId: agentId }
+        ]
+      });
+      if (!agent) return res.status(404).json({ message: "Agent not found" });
+      query.agentId = agent._id;
+    }
+
+    // Executive scope
+    if (req.user.role === "EXECUTIVE") {
+      const scopedAgents = await User.find(
+        { role: "AGENT", executiveId: new mongoose.Types.ObjectId(req.user.userId) },
+        { _id: 1 }
+      );
+      query.agentId = { $in: scopedAgents.map((a) => a._id) };
+    }
+
+    const total = await CustomerEvent.countDocuments(query);
+
+    const messages = await CustomerEvent.find(query)
+      .populate("createdBy", "fullName customId role")
+      .populate("agentId", "fullName customId")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const result = messages.map((m) => ({
+      id: m._id,
+      loanId: m.loanId,
+      customId: m.customId,
+      message: m.message,
+      type: m.type,
+      source: m.source,
+      isRead: m.isRead,
+      sentBy: {
+        name: m.createdBy?.fullName,
+        customId: m.createdBy?.customId,
+        role: m.createdBy?.role
+      },
+      sentTo: {
+        agentName: m.agentId?.fullName,
+        agentCustomId: m.agentId?.customId
+      },
+      sentAt: m.createdAt
+    }));
+
+    res.json({ total, page, limit, count: result.length, messages: result });
+
+  } catch (err) {
+    console.error("MESSAGE HISTORY ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
