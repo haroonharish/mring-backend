@@ -245,6 +245,11 @@ if (!agentId) {
       return res.status(404).json({ message: "Agent not found" });
     }
 
+    if (req.user.role === "EXECUTIVE") {
+  if (!agent.executiveId || agent.executiveId.toString() !== req.user.userId) {
+    return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
+  }
+}
     if (!agent.isActive) {
       return res.status(400).json({ message: "Agent already deactivated" });
     }
@@ -270,6 +275,12 @@ exports.restoreAgent = async (req, res) => {
   if (!agent) {
     return res.status(404).json({ message: "Agent not found" });
   }
+
+  if (req.user.role === "EXECUTIVE") {
+  if (!agent.executiveId || agent.executiveId.toString() !== req.user.userId) {
+    return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
+  }
+}
 
   if (agent.isActive) {
     return res.status(400).json({ message: "Agent already active" });
