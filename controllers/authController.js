@@ -120,8 +120,8 @@ exports.registerExecutive = async (req, res) => {
 
 exports.getExecutives = async (req, res) => {
   try {
-    const executives = await User.find({ role: "EXECUTIVE", isActive: true })
-      .select("customId fullName phoneNumber username");
+    const executives = await User.find({ role: "EXECUTIVE" })
+      .select("customId fullName phoneNumber username isActive");
 
     res.json({ executives });
   } catch (err) {
@@ -434,6 +434,47 @@ exports.markNotificationRead = async (req, res) => {
 
     res.json({ message: "Marked as read" });
 
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+exports.deleteExecutive = async (req, res) => {
+  try {
+    const { executiveCustomId } = req.body;
+    if (!executiveCustomId) {
+      return res.status(400).json({ message: "executiveCustomId is required" });
+    }
+
+    const executive = await User.findOne({ customId: executiveCustomId, role: "EXECUTIVE" });
+    if (!executive) {
+      return res.status(404).json({ message: "Executive not found" });
+    }
+
+    executive.isActive = false;
+    await executive.save();
+
+    res.json({ message: "Executive deactivated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.restoreExecutive = async (req, res) => {
+  try {
+    const { executiveCustomId } = req.body;
+    if (!executiveCustomId) {
+      return res.status(400).json({ message: "executiveCustomId is required" });
+    }
+
+    const executive = await User.findOne({ customId: executiveCustomId, role: "EXECUTIVE" });
+    if (!executive) {
+      return res.status(404).json({ message: "Executive not found" });
+    }
+
+    executive.isActive = true;
+    await executive.save();
+
+    res.json({ message: "Executive activated successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

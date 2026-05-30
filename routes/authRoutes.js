@@ -19,4 +19,6 @@ router.post("/admin/executive/register", authMiddleware(["ADMIN"]), authControll
 router.get("/admin/executives", authMiddleware(["ADMIN"]), authController.getExecutives);
 router.get("/executive/my-agents", authMiddleware(["EXECUTIVE"]), authController.getMyAgents);
 router.get("/admin/agents", authMiddleware(["ADMIN", "EXECUTIVE"]), authController.getAgentsList);
+router.post("/admin/executive/delete", authMiddleware(["ADMIN"]), authController.deleteExecutive);
+router.post("/admin/executive/restore", authMiddleware(["ADMIN"]), authController.restoreExecutive);
 module.exports = router;
