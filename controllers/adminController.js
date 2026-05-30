@@ -805,7 +805,6 @@ exports.getAttendance = async (req, res) => {
     }
 
     if (req.user.role === "EXECUTIVE") {
-      // Get all agents under this executive
       const scopedAgents = await User.find(
         { role: "AGENT", executiveId: new mongoose.Types.ObjectId(req.user.userId) },
         { _id: 1 }
@@ -813,19 +812,31 @@ exports.getAttendance = async (req, res) => {
       const scopedIds = scopedAgents.map((a) => a._id);
 
       if (agentId) {
-        // Verify the requested agent belongs to this executive
-        const requestedAgent = await User.findOne({ customId: agentId });
-        if (!requestedAgent || !scopedIds.some((id) => id.toString() === requestedAgent._id.toString())) {
+        // agentId could be _id or customId — handle both
+        const requestedAgent = await User.findOne({
+          $or: [
+            { _id: mongoose.isValidObjectId(agentId) ? new mongoose.Types.ObjectId(agentId) : null },
+            { customId: agentId }
+          ]
+        });
+        if (!requestedAgent) return res.status(404).json({ message: "Agent not found" });
+        if (!scopedIds.some((id) => id.toString() === requestedAgent._id.toString())) {
           return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
         }
         filter.agentId = requestedAgent._id;
       } else {
         filter.agentId = { $in: scopedIds };
       }
+
     } else {
-      // ADMIN — no restriction
+      // ADMIN
       if (agentId) {
-        const requestedAgent = await User.findOne({ customId: agentId });
+        const requestedAgent = await User.findOne({
+          $or: [
+            { _id: mongoose.isValidObjectId(agentId) ? new mongoose.Types.ObjectId(agentId) : null },
+            { customId: agentId }
+          ]
+        });
         if (!requestedAgent) return res.status(404).json({ message: "Agent not found" });
         filter.agentId = requestedAgent._id;
       }
@@ -840,6 +851,7 @@ exports.getAttendance = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.getAgentWeeklyLocations = async (req, res) => {
   try {
     const { agentId, startDate, endDate } = req.query;
