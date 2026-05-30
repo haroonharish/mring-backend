@@ -862,15 +862,22 @@ exports.getAgentWeeklyLocations = async (req, res) => {
     }
 
     // Executive scope check
-    if (req.user.role === "EXECUTIVE") {
-      const requestedAgent = await User.findOne({ customId: agentId, role: "AGENT" });
-      if (!requestedAgent) {
-        return res.status(404).json({ message: "Agent not found" });
-      }
-      if (!requestedAgent.executiveId || requestedAgent.executiveId.toString() !== req.user.userId) {
-        return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
-      }
-    }
+const requestedAgent = await User.findOne({
+  $or: [
+    { _id: mongoose.isValidObjectId(agentId) ? new mongoose.Types.ObjectId(agentId) : null },
+    { customId: agentId }
+  ],
+  role: "AGENT"
+});
+if (!requestedAgent) {
+  return res.status(404).json({ message: "Agent not found" });
+}
+
+if (req.user.role === "EXECUTIVE") {
+  if (!requestedAgent.executiveId || requestedAgent.executiveId.toString() !== req.user.userId) {
+    return res.status(403).json({ message: "Access denied. This agent is not under your supervision." });
+  }
+}
 
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
@@ -880,7 +887,7 @@ exports.getAgentWeeklyLocations = async (req, res) => {
     const visits = await Visit.aggregate([
       {
         $match: {
-          agentId: new mongoose.Types.ObjectId(agentId),
+          agentId: requestedAgent._id,
           visitDate: { $gte: start, $lte: end }
         }
       },
