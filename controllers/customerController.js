@@ -211,11 +211,18 @@ exports.getCustomerVisitHistory = async (req, res) => {
 
     const visits = await Visit.find({ customId }).sort({ visitDate: -1 });
 
-    // Get latest unread alert — this is what triggers the popup
+    // Latest unread — triggers popup
     const alert = await CustomerEvent.findOne({
       customerId: customer._id,
       isRead: false
     }).sort({ createdAt: -1 });
+
+    // Latest message overall — always visible on screen even after dismissal
+    const latestMessage = await CustomerEvent.findOne({
+      customerId: customer._id
+    })
+      .sort({ createdAt: -1 })
+      .select("_id message type isRead createdAt source");
 
     res.status(200).json({
       customer: {
@@ -227,8 +234,10 @@ exports.getCustomerVisitHistory = async (req, res) => {
         temporaryAddress: customer.temporaryAddress
       },
       alert: alert ? { id: alert._id, message: alert.message } : null,
+      latestMessage: latestMessage ?? null,
       visits
     });
+
   } catch (err) {
     console.error("VISIT HISTORY ERROR:", err);
     res.status(500).json({ message: "Internal server error" });
