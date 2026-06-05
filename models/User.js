@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-
+district: { type: String, default: null },
   mustChangePassword: {
     type: Boolean,
     default: false

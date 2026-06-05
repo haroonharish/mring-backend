@@ -13,7 +13,7 @@ const generateUserId = async (role) => {
 };
 
 exports.register = async (req, res) => {
-  const { username, password, confirmPassword, fullName, phoneNumber, executiveCustomId  } = req.body;
+  const { username, password, confirmPassword, fullName, phoneNumber, executiveCustomId, district  } = req.body;
 
   // Validation
   if (!username || !password || !confirmPassword || !fullName || !phoneNumber || !executiveCustomId) {
@@ -61,7 +61,8 @@ if (req.user.role === "EXECUTIVE") {
     role: "AGENT",
     fullName,
     phoneNumber,
-    executiveId: executive._id
+    executiveId: executive._id,
+    district: district || null
   });
 
   await user.save();
@@ -70,7 +71,7 @@ if (req.user.role === "EXECUTIVE") {
 
 exports.registerExecutive = async (req, res) => {
   try {
-    const { username, password, confirmPassword, fullName, phoneNumber } = req.body;
+    const { username, password, confirmPassword, fullName, phoneNumber, district } = req.body;
 
     if (!username || !password || !confirmPassword || !fullName || !phoneNumber) {
       return res.status(400).json({ message: "All fields are required" });
@@ -101,7 +102,8 @@ exports.registerExecutive = async (req, res) => {
       role: "EXECUTIVE",
       fullName,
       phoneNumber,
-      mustChangePassword: false
+      mustChangePassword: false,
+      district: district || null
     });
 
     res.status(201).json({
