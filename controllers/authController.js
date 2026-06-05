@@ -479,3 +479,47 @@ exports.restoreExecutive = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+exports.getExecutivesWithAgents = async (req, res) => {
+  try {
+    const executives = await User.aggregate([
+      { $match: { role: "EXECUTIVE" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "executiveId",
+          as: "agents"
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          customId: 1,
+          fullName: 1,
+          username: 1,
+          phoneNumber: 1,
+          isActive: 1,
+          agents: {
+            $map: {
+              input: "$agents",
+              as: "agent",
+              in: {
+                _id: "$$agent._id",
+                customId: "$$agent.customId",
+                fullName: "$$agent.fullName",
+                username: "$$agent.username",
+                phoneNumber: "$$agent.phoneNumber",
+                isActive: "$$agent.isActive"
+              }
+            }
+          }
+        }
+      },
+      { $sort: { customId: 1 } }
+    ]);
+
+    res.json({ executives });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
