@@ -299,8 +299,7 @@ exports.checkIn = async (req, res) => {
     const agentId = req.user.userId;
     const { lat, lng } = req.body;
 
-    const today = new Date().toISOString().split("T")[0];
-
+const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(",")[0].trim();
     const existing = await Attendance.findOne({
       agentId,
       date: today
@@ -336,8 +335,7 @@ exports.checkOut = async (req, res) => {
     const agentId = req.user.userId;
     const { lat, lng } = req.body;
 
-    const today = new Date().toISOString().split("T")[0];
-
+const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(",")[0].trim();
     const attendance = await Attendance.findOne({
       agentId,
       date: today
@@ -380,8 +378,7 @@ exports.getAttendanceStatus = async (req, res) => {
   try {
     const agentId = req.user.userId;
 
-    const today = new Date().toISOString().split("T")[0];
-
+const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(",")[0].trim();
     const attendance = await Attendance.findOne({
       agentId,
       date: today
