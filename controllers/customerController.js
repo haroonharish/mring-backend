@@ -231,7 +231,8 @@ exports.getCustomerVisitHistory = async (req, res) => {
         phone: customer.phone,
         permanentAddress: customer.permanentAddress,
         coBorrowerAddress: customer.coBorrowerAddress,
-        temporaryAddress: customer.temporaryAddress
+        temporaryAddress: customer.temporaryAddress,
+        branch: customer.branch,
       },
       alert: alert ? { id: alert._id, message: alert.message } : null,
       latestMessage: latestMessage ?? null,
