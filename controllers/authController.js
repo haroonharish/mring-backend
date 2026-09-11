@@ -298,6 +298,20 @@ exports.checkIn = async (req, res) => {
   try {
     const agentId = req.user.userId;
     const { lat, lng } = req.body;
+    if (
+        lat === undefined ||
+        lng === undefined ||
+        typeof lat !== "number" ||
+        typeof lng !== "number" ||
+        lat < -90 ||
+        lat > 90 ||
+        lng < -180 ||
+        lng > 180
+) {
+  return res.status(400).json({
+    message: "Valid latitude and longitude are required"
+  });
+}
 
 const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(",")[0].trim();
     const existing = await Attendance.findOne({
@@ -334,6 +348,20 @@ exports.checkOut = async (req, res) => {
   try {
     const agentId = req.user.userId;
     const { lat, lng } = req.body;
+    if (
+        lat === undefined ||
+        lng === undefined ||
+        typeof lat !== "number" ||
+        typeof lng !== "number" ||
+        lat < -90 ||
+        lat > 90 ||
+        lng < -180 ||
+        lng > 180
+      ) {
+  return res.status(400).json({
+    message: "Valid latitude and longitude are required"
+  });
+}
 
 const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(",")[0].trim();
     const attendance = await Attendance.findOne({
