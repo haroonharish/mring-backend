@@ -388,7 +388,7 @@ const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).s
       (attendance.checkOutTime - attendance.checkInTime) /
       (1000 * 60 * 60);
 
-    attendance.totalWorkHours = hours;
+    attendance.totalWorkHours = Math.round(hours * 100) / 100;
 
     await attendance.save();
 
