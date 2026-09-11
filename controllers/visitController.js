@@ -9,8 +9,13 @@ exports.createVisit = async (req, res) => {
     const { customId, visitDate, customerStatus, remark, updateFrom, latitude, longitude, actionDoneDate, revisitDate, dispoLocationstatus } = req.body;
     const agentId = req.user.userId;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date()
+    .toLocaleString("en-CA", { timeZone: "Asia/Kolkata" })
+    .split(",")[0]
+    .trim();
+
     const time = new Date();
+    
     const attendance = await Attendance.findOne({
       agentId,
       date: today
